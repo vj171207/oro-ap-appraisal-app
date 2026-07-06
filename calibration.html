@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Calibration · Oro AP Appraisal Calibration</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a href="#" id="back-link" class="back-link">&larr; Back</a>
+    <p class="eyebrow" id="city-eyebrow">City</p>
+    <h1>New Calibration</h1>
+  </header>
+
+  <main>
+    <!-- ===== FORM VIEW ===== -->
+    <form id="calibration-form">
+      <div class="card">
+        <h2>Session details</h2>
+        <div class="field">
+          <label>Test Date</label>
+          <div class="field-row-3">
+            <select id="testDay" required></select>
+            <select id="testMonth" required></select>
+            <select id="testYear" required></select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="auditorName">Audit Official Name</label>
+            <input type="text" id="auditorName" required />
+          </div>
+          <div class="field">
+            <label for="auditorEmpCode">Auditor Emp Code</label>
+            <input type="text" id="auditorEmpCode" required />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Appraisal partner</h2>
+        <div class="field">
+          <label for="apEmpCode">AP Employee Code</label>
+          <input type="text" id="apEmpCode" required placeholder="e.g. ORO00020" />
+          <p id="ap-lookup-status" class="lookup-status"></p>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="apName">AP Name</label>
+            <input type="text" id="apName" required />
+          </div>
+          <div class="field">
+            <label for="apDoj">Date of Joining</label>
+            <input type="date" id="apDoj" required />
+          </div>
+        </div>
+      </div>
+
+      <p class="section-label">Needle readings</p>
+      <div id="needles-container"></div>
+
+      <div class="card">
+        <h2>Remarks (optional)</h2>
+        <div class="field">
+          <textarea id="remarks" rows="3" placeholder="Any observations from the session…"></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Submit calibration</button>
+    </form>
+
+    <!-- ===== RESULT VIEW (hidden until submit) ===== -->
+    <div id="result-view" style="display: none;">
+      <div id="result-banner" class="result-banner">
+        <div class="result-word" id="result-word"></div>
+        <div class="result-score" id="result-score"></div>
+        <div class="autofail-note" id="autofail-note" style="display: none;">
+          Auto-fail: AP did not identify a Below 18K needle.
+        </div>
+      </div>
+      <a href="#" id="view-city-link" class="btn btn-secondary" style="margin-bottom: 10px;">Back to city history</a>
+      <a href="#" id="new-calibration-again-link" class="btn btn-primary">Start another calibration</a>
+    </div>
+  </main>
+
+  <script type="module" src="js/calibration.js"></script>
+</body>
+</html>

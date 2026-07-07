@@ -139,17 +139,29 @@ function renderList(visible) {
 
 applyBtn.addEventListener("click", applyFilters);
 
-exportBtn.addEventListener("click", () => {
+exportBtn.addEventListener("click", async () => {
   const records = getAppliedRecords();
   if (records.length === 0) {
     alert("No records match the current filters — nothing to export.");
     return;
   }
-  const rangeLabel = DATE_RANGE_OPTIONS.find((o) => o.value === appliedDateRange)?.label.replace(/\s+/g, "") || "All";
+  const rangeLabel = DATE_RANGE_OPTIONS.find((o) => o.value === appliedDateRange)?.label || "All time";
+  const rangeSlug = rangeLabel.replace(/\s+/g, "");
   const resultLabel = appliedResultFilter === "all" ? "" : `_${appliedResultFilter}`;
   const dateStamp = new Date().toISOString().slice(0, 10);
-  const filename = `${city}_${rangeLabel}${resultLabel}_${dateStamp}.xlsx`;
-  downloadSingleSheetWorkbook(records, city, filename);
+  const filename = `${city}_${rangeSlug}${resultLabel}_${dateStamp}.xlsx`;
+
+  exportBtn.disabled = true;
+  exportBtn.textContent = "Generating…";
+  try {
+    await downloadSingleSheetWorkbook(records, city, filename, rangeLabel);
+  } catch (err) {
+    console.error(err);
+    alert("Couldn't generate the Excel file. Please try again.");
+  } finally {
+    exportBtn.disabled = false;
+    exportBtn.textContent = "⬇ Export to Excel";
+  }
 });
 
 function buildDetailHtml(d) {

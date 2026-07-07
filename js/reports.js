@@ -35,7 +35,7 @@ function updateSummary() {
 
 dateRangeSelect.addEventListener("change", updateSummary);
 
-exportBtn.addEventListener("click", () => {
+exportBtn.addEventListener("click", async () => {
   const filtered = filterByDateRange(allRecords, dateRangeSelect.value);
   if (filtered.length === 0) {
     alert("No records match this date range — nothing to export.");
@@ -53,11 +53,22 @@ exportBtn.addEventListener("click", () => {
     return (a.testDate || "").localeCompare(b.testDate || "");
   });
 
-  const rangeLabel = DATE_RANGE_OPTIONS.find((o) => o.value === dateRangeSelect.value)?.label.replace(/\s+/g, "") || "All";
+  const rangeLabel = DATE_RANGE_OPTIONS.find((o) => o.value === dateRangeSelect.value)?.label || "All time";
+  const rangeSlug = rangeLabel.replace(/\s+/g, "");
   const dateStamp = new Date().toISOString().slice(0, 10);
-  const filename = `Oro_AllCities_Calibration_${rangeLabel}_${dateStamp}.xlsx`;
+  const filename = `Oro_AllCities_Calibration_${rangeSlug}_${dateStamp}.xlsx`;
 
-  downloadMultiCityWorkbook(recordsByCity, sortedAll, filename);
+  exportBtn.disabled = true;
+  exportBtn.textContent = "Generating…";
+  try {
+    await downloadMultiCityWorkbook(recordsByCity, sortedAll, filename, rangeLabel);
+  } catch (err) {
+    console.error(err);
+    alert("Couldn't generate the Excel file. Please try again.");
+  } finally {
+    exportBtn.disabled = false;
+    exportBtn.textContent = "⬇ Download Report";
+  }
 });
 
 loadAll();

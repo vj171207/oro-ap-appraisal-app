@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>One-time historical import — DO NOT link from the live app</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <style>
+    main { max-width: 700px; }
+    .warning-box {
+      background: var(--fail-soft);
+      border: 1px solid var(--fail);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .warning-box strong { color: var(--fail); }
+    #log {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      margin-top: 16px;
+    }
+    .progress-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <p class="eyebrow">Oro · One-time admin utility</p>
+    <h1>Historical Calibration Import</h1>
+  </header>
+
+  <main>
+    <div class="warning-box">
+      <strong>⚠ Run this once, then delete this page.</strong><br />
+      This imports 789 historical calibration records into Firestore. It does
+      not check for duplicates — running it twice will create 1,578 records
+      instead of 789. Once the import succeeds and you've verified the data
+      in the app, delete <code>admin/import-historical.html</code>,
+      <code>admin/historical-data.json</code>, and
+      <code>admin/import-historical.js</code> from the repo.
+    </div>
+
+    <div class="card">
+      <h2>Before you click import</h2>
+      <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+        This writes directly to your live <code>calibrations</code> collection,
+        using the same rules as the app itself (no special access — if the
+        current Firestore rules ever get more restrictive, this may need
+        updating too). Historical scores and Pass/Fail results are preserved
+        exactly as originally recorded, including any past manual scoring
+        errors — nothing is recalculated.
+      </p>
+    </div>
+
+    <button id="import-btn" class="btn btn-primary">Import 789 historical records</button>
+
+    <div class="progress-bar" id="progress-wrap" style="display:none;">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div id="log" style="display:none;"></div>
+  </main>
+
+  <script type="module" src="import-historical.js"></script>
+</body>
+</html>

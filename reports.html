@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All-Cities Report · Oro AP Appraisal Calibration</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="back-link">&larr; All cities</a>
+    <p class="eyebrow">Oro · Lending Services Audit</p>
+    <h1>All-Cities Report</h1>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>Download a combined report</h2>
+      <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+        Generates one Excel file with an "Overall" sheet covering every city,
+        plus a separate sheet per city — matching the original report format.
+      </p>
+
+      <div class="field">
+        <label for="date-range-select">Date range</label>
+        <select id="date-range-select"></select>
+      </div>
+
+      <div id="summary-line" style="font-size: 13px; color: var(--text-muted); margin: 10px 0 16px;"></div>
+
+      <button type="button" id="export-btn" class="btn btn-primary">⬇ Download Report</button>
+    </div>
+  </main>
+
+  <script type="module" src="js/reports.js"></script>
+</body>
+</html>

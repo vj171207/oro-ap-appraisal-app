@@ -144,11 +144,60 @@ comment block at the top of that file for full one-time setup steps
 Name and DOJ remain editable after autofill — if the roster is stale or the
 lookup misses, the auditor can still type them in manually.
 
+### ⚠️ Handover note: transferring this before the intern's account is deactivated
+
+The sync code lives in the Sheet's bound Apps Script project and isn't tied
+to any one person. But the **installable `onSheetEdit` trigger** runs under
+whichever Google account created it — so once that account is deactivated,
+the trigger silently stops firing (the Sheet keeps working fine; Firestore
+just stops receiving updates, with no visible error to anyone editing the
+Sheet).
+
+**Before the outgoing intern's account is deactivated:**
+
+1. Give the incoming owner **Editor access** to the AP roster Sheet (any
+   Google account works, doesn't need to be on the same Workspace domain)
+2. They open the Sheet → **Extensions → Apps Script** — the code is already
+   there, nothing to re-paste or reconfigure
+3. They create their **own** trigger: clock icon → **Add Trigger** →
+   function `onSheetEdit` → **From spreadsheet** → **On edit** → **Save**,
+   approving the permissions prompt under their own login
+4. Test it: edit a row in the Sheet, confirm the change lands in the
+   `appraisal_partners` Firestore collection within a few seconds
+5. Optionally delete the old trigger for tidiness (not urgent)
+
+**Do NOT need to be redone:** the Script Properties (service account
+email/key, Firestore project ID) — those belong to the script project
+itself, not to any individual's account.
+
+Do this a few days before the handoff, not on the last day, so there's time
+to verify it actually works while the outgoing person can still help debug.
+
+## Excel export / reports
+
+Two ways to export calibration data as a styled `.xlsx` file, both using
+**ExcelJS** (loaded via CDN) — not SheetJS, whose free build can't write
+cell colors/fonts at all:
+
+- **Per-city export** (on each city page): filter by Result (All/Pass/Fail)
+  and Date range (all time / last 3-6-12 months / current or previous
+  calendar quarter), click **Apply**, then **Export to Excel** — exports
+  exactly what's currently shown.
+- **All-Cities Report** (`reports.html`, linked from the landing page):
+  same date-range filter, but produces one workbook with an **"Overall"**
+  sheet (every city, sorted by city then date) plus a separate tab per
+  city — matching the original spreadsheet's structure.
+
+Column layout matches the original AP Calibration Google Sheet's headers
+exactly (SL, Month & Year, Test Result, Score, Needle 1-5 Given/Answer/
+Score, etc.), so it should look familiar to anyone who's received the old
+manually-built reports. Styling logic lives in `js/exportExcel.js`, shared
+by both `city.js` and `reports.js`.
+
 ## Known gaps / next steps
 
 - [ ] Firebase Auth + role-based access (auditor / manager / city head)
 - [ ] Automatic "2 consecutive quarter fails → PIP" flagging across a city's
       history
-- [ ] Cross-city summary/reporting view
 - [ ] AP roster sync currently one-way (Sheet → Firestore); if a lookup
       shows stale data, the fix is in the Sheet, not the app

@@ -15,6 +15,14 @@ import {
   getDoc,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithRedirect,
+  getRedirectResult,
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCKTm3sBP-ksjKYS1N1QlZEEE-ySCXFiAQ",
@@ -28,5 +36,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-export { db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, Timestamp };
+export {
+  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, Timestamp,
+  auth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut,
+};

@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Both collections now require a signed-in @orocorp.in Google account.
+    // This is defense in depth alongside the app's own login screen — even
+    // someone who found the Firestore project reference directly, bypassing
+    // the app entirely, can't read or write without a valid Oro login.
+    function isOroUser() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.matches('.*@orocorp[.]in$');
+    }
+
+    match /calibrations/{calibrationId} {
+      allow read: if isOroUser();
+      allow create: if isOroUser()
+                    && request.resource.data.keys().hasAll(
+                        ['city','testDate','monthYearLabel','auditorName','auditorEmpCode',
+                         'apName','apEmpCode','apDoj','needles','totalScore',
+                         'autoFailTriggered','result'])
+                    && request.resource.data.city is string
+                    && request.resource.data.totalScore is number
+                    && request.resource.data.totalScore >= 0
+                    && request.resource.data.totalScore <= 10
+                    && request.resource.data.result in ['Pass', 'Fail']
+                    && request.resource.data.needles is list
+                    && request.resource.data.needles.size() == 5;
+      allow update, delete: if false;
+    }
+
+    match /appraisal_partners/{empCode} {
+      allow read: if isOroUser();
+      allow write: if false; // writes only via the Apps Script service account (IAM), never from the app
+    }
+
+    match /{document=**} {
+      allow read, write: if false; // deny-by-default for anything not explicitly covered above
+    }
+  }
+}

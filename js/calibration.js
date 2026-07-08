@@ -83,18 +83,60 @@ async function main() {
     }
 
     if (found) {
+      const apLocation = (found.location || "").trim().toLowerCase();
+      const pageCity = (city || "").trim().toLowerCase();
+
+      if (apLocation && apLocation !== pageCity) {
+        // Found in the roster, but registered under a different city —
+        // don't autofill, and don't let this look like a silent success.
+        apNameInput.value = "";
+        apDojInput.value = "";
+        lookupStatus.textContent = `Not found in ${city}'s roster — this code belongs to ${found.location}.`;
+        lookupStatus.className = "lookup-status not-found";
+        showToast(`Not found in ${city}. This AP (${found.name || rawCode}) is registered under ${found.location}. Check the code.`);
+        return;
+      }
+
       apNameInput.value = found.name || "";
       if (found.doj) apDojInput.value = found.doj;
       const locationNote = found.location ? ` · ${found.location}` : "";
       lookupStatus.textContent = `✓ Found in roster${locationNote}`;
       lookupStatus.className = "lookup-status found";
     } else {
+      apNameInput.value = "";
+      apDojInput.value = "";
       lookupStatus.textContent = "Not found in roster — check the code, or enter name/DOJ manually.";
       lookupStatus.className = "lookup-status not-found";
     }
   }
 
   apEmpCodeInput.addEventListener("blur", lookupAP);
+
+  // ---- Toast for higher-visibility errors (e.g. cross-city AP lookup) ----
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function showToast(message) {
+    const existing = document.querySelector(".toast-error");
+    if (existing) existing.remove();
+
+    const toast = document.createElement("div");
+    toast.className = "toast-error";
+    toast.innerHTML = `
+      <span class="toast-icon">!</span>
+      <span class="toast-message">${escapeHtml(message)}</span>
+      <button type="button" class="toast-close" aria-label="Dismiss">&times;</button>
+    `;
+    document.body.appendChild(toast);
+
+    const remove = () => toast.remove();
+    toast.querySelector(".toast-close").addEventListener("click", remove);
+    setTimeout(remove, 6000);
+  }
 
   // Evenly space karat options across the strip with a small inner margin
   // so end markers don't get clipped by the circle's own radius.

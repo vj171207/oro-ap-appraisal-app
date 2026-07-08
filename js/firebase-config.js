@@ -1,5 +1,4 @@
 // Firebase initialization — shared across all pages.
-// Auth is intentionally not wired up yet (open access for pilot phase).
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
@@ -13,6 +12,8 @@ import {
   serverTimestamp,
   doc,
   getDoc,
+  updateDoc,
+  arrayUnion,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
@@ -38,6 +39,6 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 export {
-  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, Timestamp,
+  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, updateDoc, arrayUnion, Timestamp,
   auth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut,
 };

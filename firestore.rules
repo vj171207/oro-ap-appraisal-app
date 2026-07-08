@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Both collections now require a signed-in @orocorp.in Google account.
+    // Both collections require a signed-in @orocorp.in Google account.
     // This is defense in depth alongside the app's own login screen — even
     // someone who found the Firestore project reference directly, bypassing
     // the app entirely, can't read or write without a valid Oro login.
@@ -10,6 +10,17 @@ service cloud.firestore {
       return request.auth != null
         && request.auth.token.email != null
         && request.auth.token.email.matches('.*@orocorp[.]in$');
+    }
+
+    // Manager check for config/cities writes. Looks up config/managers
+    // (emails stored lowercase there) rather than using custom claims,
+    // since custom claims require a Cloud Function, which needs the paid
+    // Blaze plan. This get() costs one extra read per write attempt —
+    // trivial at this app's scale.
+    function isManager() {
+      return isOroUser()
+        && exists(/databases/$(database)/documents/config/managers)
+        && request.auth.token.email.lower() in get(/databases/$(database)/documents/config/managers).data.emails;
     }
 
     match /calibrations/{calibrationId} {
@@ -32,6 +43,16 @@ service cloud.firestore {
     match /appraisal_partners/{empCode} {
       allow read: if isOroUser();
       allow write: if false; // writes only via the Apps Script service account (IAM), never from the app
+    }
+
+    match /config/cities {
+      allow read: if isOroUser();
+      allow write: if isManager() && request.resource.data.list is list;
+    }
+
+    match /config/managers {
+      allow read: if isOroUser();
+      allow write: if false; // edited manually via Firebase Console only, not self-service
     }
 
     match /{document=**} {

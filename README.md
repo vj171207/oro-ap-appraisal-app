@@ -194,6 +194,44 @@ Score, etc.), so it should look familiar to anyone who's received the old
 manually-built reports. Styling logic lives in `js/exportExcel.js`, shared
 by both `city.js` and `reports.js`.
 
+## Managing the city list (Settings page)
+
+The city list used to be hardcoded in `js/cities.js`. It's now stored in
+Firestore (`config/cities`, field `list`), editable from an in-app
+**Settings** page — visible only to Managers (see below). `js/cities.js`
+still exists, but now just fetches from Firestore, with a hardcoded
+fallback list in case that document doesn't exist yet.
+
+**One-time setup required** (do this once, in the Firebase Console, before
+this feature works):
+
+1. Go to `Firestore Database → Data`
+2. Create a collection called `config`
+3. Inside it, create a document with ID `cities`, with one field:
+   - `list` (array of strings) — seed it with the current 8 cities:
+     `Chennai, Bengaluru, Hyderabad, Pune, Vijayawada, Guntur, Warangal, Karimnagar`
+4. Create a second document with ID `managers`, with one field:
+   - `emails` (array of strings) — **must be lowercase** — currently:
+     `vibhav.j@orocorp.in, rijin.c@orocorp.in`
+
+Both documents are readable by any signed-in Oro user, but only writable
+under specific conditions (see `firestore.rules`): `config/cities` can only
+be written by someone whose email appears in `config/managers`; the
+`config/managers` document itself can't be written from the app at all — to
+add or remove a Manager, edit that document directly in the Firebase
+Console.
+
+**Why managers, not custom claims/roles:** Firebase custom claims need a
+Cloud Function to set, which requires the paid Blaze plan. Looking up a
+plain Firestore document from within the security rules (`isManager()` in
+`firestore.rules`) achieves the same access control for free.
+
+**Adding a city:** critical requirement — the spelling must **exactly**
+match how that city appears in the AP roster sheet's Location column.
+Everything (AP lookups, calibration filtering, reports) matches on this
+string exactly; a casing or spelling mismatch will silently produce a
+"phantom" city with no data, or fail AP lookups for that city.
+
 ## Known gaps / next steps
 
 - [ ] Firebase Auth + role-based access (auditor / manager / city head)

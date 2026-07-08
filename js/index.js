@@ -1,12 +1,13 @@
-import { requireAuth } from "./authGuard.js";
-import { CITIES } from "./cities.js";
+import { requireAuth, isManagerEmail } from "./authGuard.js";
+import { getCities } from "./cities.js";
 
 async function main() {
-  await requireAuth();
+  const user = await requireAuth();
 
   const listEl = document.getElementById("city-list");
+  const cities = await getCities();
 
-  CITIES.forEach((city) => {
+  cities.forEach((city) => {
     const row = document.createElement("a");
     row.href = `city.html?city=${encodeURIComponent(city)}`;
     row.className = "city-row";
@@ -17,6 +18,11 @@ async function main() {
     listEl.appendChild(row);
   });
 
+  const isManager = await isManagerEmail(user.email);
+  if (isManager) {
+    const settingsLink = document.getElementById("settings-link");
+    if (settingsLink) settingsLink.style.display = "inline-flex";
+  }
 }
 
 main();

@@ -6,7 +6,7 @@
 // Also populates a "Signed in as X · Sign out" element if the page has one
 // with id="user-bar".
 
-import { auth, onAuthStateChanged, signOut } from "./firebase-config.js";
+import { auth, onAuthStateChanged, signOut, db, doc, getDoc } from "./firebase-config.js";
 
 const ALLOWED_DOMAIN = "orocorp.in";
 
@@ -56,4 +56,28 @@ function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+/**
+ * Checks whether an email is in the Firestore-managed list of Managers
+ * (config/managers, field "emails"). That document is only editable
+ * directly in the Firebase Console (allow write: if false in the rules) —
+ * intentionally not self-service, since it's rarely changed and the
+ * consequence of getting it wrong (someone gaining Settings access) is
+ * more sensitive than the city list itself.
+ *
+ * Emails in that document must be stored lowercase — this check lowercases
+ * the input to match, but does not lowercase the stored list itself.
+ */
+export async function isManagerEmail(email) {
+  if (!email) return false;
+  try {
+    const snap = await getDoc(doc(db, "config", "managers"));
+    if (!snap.exists()) return false;
+    const emails = snap.data().emails || [];
+    return emails.includes(email.toLowerCase());
+  } catch (err) {
+    console.error("Couldn't check manager status.", err);
+    return false;
+  }
 }

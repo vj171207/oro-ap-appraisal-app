@@ -1,11 +1,12 @@
 import { requireAuth } from "./authGuard.js";
 import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
-import { CITIES } from "./cities.js";
+import { getCities } from "./cities.js";
 import { DATE_RANGE_OPTIONS, filterByDateRange, downloadMultiCityWorkbook } from "./exportExcel.js";
 
 async function main() {
   await requireAuth();
 
+  const cities = await getCities();
   const dateRangeSelect = document.getElementById("date-range-select");
   const exportBtn = document.getElementById("export-btn");
   const summaryLine = document.getElementById("summary-line");
@@ -47,7 +48,7 @@ async function main() {
     }
 
     const recordsByCity = {};
-    CITIES.forEach((city) => {
+    cities.forEach((city) => {
       recordsByCity[city] = filtered.filter((r) => r.city === city);
     });
 

@@ -17,9 +17,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
@@ -40,5 +39,5 @@ const auth = getAuth(app);
 
 export {
   db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, Timestamp,
-  auth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut,
+  auth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut,
 };

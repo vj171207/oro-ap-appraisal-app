@@ -125,15 +125,47 @@ function escapeHtml(str) {
  * Emails in that document must be stored lowercase — this check lowercases
  * the input to match, but does not lowercase the stored list itself.
  */
+/**
+ * Checks whether an email is in the Firestore-managed list of Managers
+ * (config/managers, field "emails"). That document is only editable
+ * directly in the Firebase Console (allow write: if false in the rules) —
+ * intentionally not self-service, since it's rarely changed and the
+ * consequence of getting it wrong (someone gaining Settings access) is
+ * more sensitive than the city list itself.
+ *
+ * Emails in that document must be stored lowercase — this check lowercases
+ * the input to match, but does not lowercase the stored list itself.
+ *
+ * Cached in sessionStorage for the duration of the browser tab session —
+ * without this, every single page load (on every page, for every user)
+ * triggered its own Firestore read just to decide whether to show the
+ * Settings link, which added a network round-trip to every page view.
+ * Manager status realistically never changes mid-session; the actual
+ * security boundary is still enforced server-side by the Firestore rules
+ * on every write attempt regardless of what this cached value says — this
+ * only affects whether the Settings *link* is shown, not what's allowed.
+ */
 export async function isManagerEmail(email) {
   if (!email) return false;
+  const cacheKey = `managerCheck:${email.toLowerCase()}`;
+
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached !== null) {
+    return cached === "true";
+  }
+
+  let result = false;
   try {
     const snap = await getDoc(doc(db, "config", "managers"));
-    if (!snap.exists()) return false;
-    const emails = snap.data().emails || [];
-    return emails.includes(email.toLowerCase());
+    if (snap.exists()) {
+      const emails = snap.data().emails || [];
+      result = emails.includes(email.toLowerCase());
+    }
   } catch (err) {
     console.error("Couldn't check manager status.", err);
-    return false;
+    result = false;
   }
+
+  sessionStorage.setItem(cacheKey, String(result));
+  return result;
 }

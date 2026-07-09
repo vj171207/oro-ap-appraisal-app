@@ -200,8 +200,38 @@ function triggerDownload(buffer, filename) {
   URL.revokeObjectURL(url);
 }
 
+const EXCELJS_CDN_URL = "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
+
+// ExcelJS is a large library (several hundred KB) that used to be loaded
+// unconditionally in <head> on every visit to city.html/reports.html, even
+// though most visits never click Export — that blocked page rendering for
+// a feature used a small fraction of the time. Loaded on-demand instead,
+// only when an export is actually requested. Cached so a second export in
+// the same session doesn't re-fetch or re-inject the script tag, and safe
+// to call concurrently (e.g. double-clicking Export) without loading twice.
+let exceljsLoadPromise = null;
+
+function ensureExcelJSLoaded() {
+  if (typeof ExcelJS !== "undefined") return Promise.resolve();
+  if (exceljsLoadPromise) return exceljsLoadPromise;
+
+  exceljsLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = EXCELJS_CDN_URL;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      exceljsLoadPromise = null; // allow retry on a later export attempt
+      reject(new Error("Couldn't load the Excel export library. Check your connection and try again."));
+    };
+    document.head.appendChild(script);
+  });
+
+  return exceljsLoadPromise;
+}
+
 /** Downloads a single-sheet styled workbook for one city's (already filtered) records. */
 export async function downloadSingleSheetWorkbook(records, cityName, filename, rangeLabel) {
+  await ensureExcelJSLoaded();
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet(cityName.substring(0, 31));
   styleSheet(ws, records, { cityLabel: cityName, rangeLabel });
@@ -211,6 +241,7 @@ export async function downloadSingleSheetWorkbook(records, cityName, filename, r
 
 /** Downloads a multi-sheet styled workbook: an "Overall" sheet plus one sheet per city. */
 export async function downloadMultiCityWorkbook(recordsByCity, allRecordsSorted, filename, rangeLabel) {
+  await ensureExcelJSLoaded();
   const wb = new ExcelJS.Workbook();
 
   const overallWs = wb.addWorksheet("Overall");

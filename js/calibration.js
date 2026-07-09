@@ -1,4 +1,5 @@
 import { requireAuth } from "./authGuard.js";
+import { showErrorToast } from "./toast.js";
 import { KARAT_OPTIONS, scoreNeedle, computeResult } from "./scoring.js";
 import { db, collection, addDoc, serverTimestamp, doc, getDoc } from "./firebase-config.js";
 
@@ -56,7 +57,10 @@ async function main() {
   async function loadAuditors() {
     try {
       const snap = await getDoc(doc(db, "config", "auditors"));
-      auditorList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+      const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+      auditorList = rawList.filter(
+        (a) => a && typeof a === "object" && typeof a.name === "string" && typeof a.empCode === "string"
+      );
     } catch (err) {
       console.error("Couldn't load auditor list.", err);
       auditorList = [];
@@ -122,7 +126,7 @@ async function main() {
         apDojInput.value = "";
         lookupStatus.textContent = `Not found in ${city}'s roster — this code belongs to ${found.location}.`;
         lookupStatus.className = "lookup-status not-found";
-        showToast(`Not found in ${city}. This AP (${found.name || rawCode}) is registered under ${found.location}. Check the code.`);
+        showErrorToast(`Not found in ${city}. This AP (${found.name || rawCode}) is registered under ${found.location}. Check the code.`);
         return;
       }
 
@@ -147,24 +151,6 @@ async function main() {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
-  }
-
-  function showToast(message) {
-    const existing = document.querySelector(".toast-error");
-    if (existing) existing.remove();
-
-    const toast = document.createElement("div");
-    toast.className = "toast-error";
-    toast.innerHTML = `
-      <span class="toast-icon">!</span>
-      <span class="toast-message">${escapeHtml(message)}</span>
-      <button type="button" class="toast-close" aria-label="Dismiss">&times;</button>
-    `;
-    document.body.appendChild(toast);
-
-    const remove = () => toast.remove();
-    toast.querySelector(".toast-close").addEventListener("click", remove);
-    setTimeout(remove, 6000);
   }
 
   // Evenly space karat options across the strip with a small inner margin

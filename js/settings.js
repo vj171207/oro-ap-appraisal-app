@@ -41,7 +41,17 @@ async function main() {
 
   async function loadAuditors() {
     const snap = await getDoc(auditorsDocRef);
-    const list = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+    const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+    // Defensive filter: a malformed entry (e.g. a stray placeholder left by
+    // Firestore Console's "add array field" UI, which isn't a proper
+    // {name, empCode} object) should be silently dropped here, not crash
+    // the whole page the way a bare .toLowerCase() on undefined would.
+    const list = rawList.filter(
+      (a) => a && typeof a === "object" && typeof a.name === "string" && typeof a.empCode === "string"
+    );
+    if (list.length !== rawList.length) {
+      console.warn(`config/auditors contains ${rawList.length - list.length} malformed entr(y/ies) — ignored. Check Firestore Console.`);
+    }
     renderAuditors(list);
     updateToggleLabel(toggleAuditorsBtn, "auditors", list.length, auditorsExpanded);
     return list;
@@ -133,7 +143,11 @@ async function main() {
 
   async function loadCities() {
     const snap = await getDoc(citiesDocRef);
-    const list = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+    const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+    const list = rawList.filter((c) => typeof c === "string" && c.trim().length > 0);
+    if (list.length !== rawList.length) {
+      console.warn(`config/cities contains ${rawList.length - list.length} malformed entr(y/ies) — ignored. Check Firestore Console.`);
+    }
     renderCities(list);
     updateToggleLabel(toggleCitiesBtn, "cities", list.length, citiesExpanded);
     return list;

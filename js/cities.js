@@ -17,8 +17,9 @@ const FALLBACK_CITIES = [
 export async function getCities() {
   try {
     const snap = await getDoc(doc(db, "config", "cities"));
-    if (snap.exists() && Array.isArray(snap.data().list) && snap.data().list.length > 0) {
-      return snap.data().list;
+    if (snap.exists() && Array.isArray(snap.data().list)) {
+      const filtered = snap.data().list.filter((c) => typeof c === "string" && c.trim().length > 0);
+      if (filtered.length > 0) return filtered;
     }
   } catch (err) {
     console.error("Couldn't load city list from Firestore, using fallback.", err);

@@ -1,6 +1,9 @@
 import {
   auth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut,
 } from "./firebase-config.js";
+import { installGlobalErrorReporting } from "./toast.js";
+
+installGlobalErrorReporting();
 
 const ALLOWED_DOMAIN = "orocorp.in";
 

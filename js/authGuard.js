@@ -7,6 +7,9 @@
 // with id="user-bar".
 
 import { auth, onAuthStateChanged, signOut, db, doc, getDoc } from "./firebase-config.js";
+import { installGlobalErrorReporting } from "./toast.js";
+
+installGlobalErrorReporting();
 
 const ALLOWED_DOMAIN = "orocorp.in";
 

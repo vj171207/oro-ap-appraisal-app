@@ -6,7 +6,7 @@
   <title>Oro AP Appraisal Calibration</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
+<body class="index-page">
   <header class="app-header">
     <div id="user-bar" class="user-bar"></div>
     <p class="eyebrow">Oro · Lending Services Audit</p>
@@ -14,16 +14,50 @@
   </header>
 
   <main>
-    <p class="section-label">Select a city to continue</p>
-    <div class="city-list" id="city-list"></div>
+    <div class="history-layout">
+      <aside class="history-stats">
+        <div class="stats-card">
+          <div class="stat-row">
+            <span class="stat-label">Total</span>
+            <span class="stat-value" id="stat-total">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Pass</span>
+            <span class="stat-value pass" id="stat-pass">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Fail</span>
+            <span class="stat-value fail" id="stat-fail">—</span>
+          </div>
+        </div>
 
-    <a href="reports.html" class="btn btn-secondary" style="margin-top: 20px;">
-      📊 All-Cities Report
-    </a>
+        <div class="filter-row">
+          <div class="field" style="margin-bottom: 0;">
+            <label for="result-filter-select">Result</label>
+            <select id="result-filter-select">
+              <option value="all">All</option>
+              <option value="Pass">Pass</option>
+              <option value="Fail">Fail</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label for="date-range-select">Date range</label>
+            <select id="date-range-select"></select>
+          </div>
+        </div>
 
-    <a href="settings.html" id="settings-link" class="btn btn-secondary" style="margin-top: 10px; display: none;">
-      ⚙ Settings
-    </a>
+        <button type="button" id="apply-filters-btn" class="btn btn-primary" style="margin-top: 12px;">Apply</button>
+      </aside>
+
+      <div>
+        <p class="section-label">Select a city to continue</p>
+        <div class="city-list" id="city-list"></div>
+
+        <a href="reports.html" class="btn btn-secondary" style="margin-top: 20px;">
+          📊 All-Cities Report
+        </a>
+      </div>
+    </div>
   </main>
 
   <footer class="app-footer">Quarterly calibration · per the Oro Appraisal SOP</footer>

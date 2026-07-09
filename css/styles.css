@@ -93,8 +93,31 @@ a { color: inherit; text-decoration: none; }
   top: 20px;
   right: 20px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.user-bar-row {
+  display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.user-bar-settings-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.user-bar-settings-link:hover {
+  text-decoration: underline;
+}
+
+.user-bar-debug {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .user-bar-name {
@@ -509,7 +532,8 @@ footer.app-footer {
 
 /* ---------- City page: wider layout for the sidebar + history split ---------- */
 
-body.city-page main {
+body.city-page main,
+body.index-page main {
   max-width: 960px;
 }
 

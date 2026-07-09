@@ -50,6 +50,11 @@ service cloud.firestore {
       allow write: if isManager() && request.resource.data.list is list;
     }
 
+    match /config/auditors {
+      allow read: if isOroUser();
+      allow write: if isManager() && request.resource.data.list is list;
+    }
+
     match /config/managers {
       allow read: if isOroUser();
       allow write: if false; // edited manually via Firebase Console only, not self-service

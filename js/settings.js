@@ -85,6 +85,92 @@ async function main() {
   }
 
   loadCities();
+
+  // ---- Auditors ----
+
+  const auditorListEl = document.getElementById("auditor-list-display");
+  const newAuditorNameInput = document.getElementById("new-auditor-name-input");
+  const newAuditorCodeInput = document.getElementById("new-auditor-code-input");
+  const addAuditorBtn = document.getElementById("add-auditor-btn");
+  const auditorErrorEl = document.getElementById("add-auditor-error");
+  const auditorSuccessEl = document.getElementById("add-auditor-success");
+
+  const auditorsDocRef = doc(db, "config", "auditors");
+
+  async function loadAuditors() {
+    const snap = await getDoc(auditorsDocRef);
+    const list = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+    renderAuditors(list);
+    return list;
+  }
+
+  function renderAuditors(list) {
+    if (list.length === 0) {
+      auditorListEl.innerHTML = `<div class="empty-state">No auditors configured yet.</div>`;
+      return;
+    }
+    auditorListEl.innerHTML = list
+      .map(
+        (a) => `
+        <div class="city-row" style="cursor: default;">
+          <span class="name">${escapeHtml(a.name)}</span>
+          <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);">${escapeHtml(a.empCode)}</span>
+        </div>`
+      )
+      .join("");
+  }
+
+  function clearAuditorMessages() {
+    auditorErrorEl.style.display = "none";
+    auditorSuccessEl.style.display = "none";
+  }
+
+  addAuditorBtn.addEventListener("click", async () => {
+    clearAuditorMessages();
+    const newName = newAuditorNameInput.value.trim();
+    const newCode = newAuditorCodeInput.value.trim();
+
+    if (!newName || !newCode) {
+      auditorErrorEl.textContent = "Enter both a name and an employee code.";
+      auditorErrorEl.style.display = "block";
+      return;
+    }
+
+    const currentList = await loadAuditors();
+    const nameDuplicate = currentList.some((a) => a.name.toLowerCase() === newName.toLowerCase());
+    const codeDuplicate = currentList.some((a) => a.empCode.toLowerCase() === newCode.toLowerCase());
+    if (nameDuplicate) {
+      auditorErrorEl.textContent = `"${newName}" is already in the list.`;
+      auditorErrorEl.style.display = "block";
+      return;
+    }
+    if (codeDuplicate) {
+      auditorErrorEl.textContent = `Employee code "${newCode}" is already assigned to someone else.`;
+      auditorErrorEl.style.display = "block";
+      return;
+    }
+
+    addAuditorBtn.disabled = true;
+    addAuditorBtn.textContent = "Adding…";
+
+    try {
+      await updateDoc(auditorsDocRef, { list: arrayUnion({ name: newName, empCode: newCode }) });
+      auditorSuccessEl.textContent = `"${newName}" added. They'll now appear in the auditor dropdown on the calibration form.`;
+      auditorSuccessEl.style.display = "block";
+      newAuditorNameInput.value = "";
+      newAuditorCodeInput.value = "";
+      await loadAuditors();
+    } catch (err) {
+      console.error(err);
+      auditorErrorEl.textContent = "Couldn't add the auditor. Please try again.";
+      auditorErrorEl.style.display = "block";
+    } finally {
+      addAuditorBtn.disabled = false;
+      addAuditorBtn.textContent = "Add Auditor";
+    }
+  });
+
+  loadAuditors();
 }
 
 main();

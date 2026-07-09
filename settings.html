@@ -42,6 +42,30 @@
 
       <p class="section-label">Current cities</p>
       <div id="city-list-display" class="city-list"></div>
+
+      <div class="card" style="margin-top: 24px;">
+        <h2>Add an auditor</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
+          Auditors added here appear as a dropdown on the calibration form —
+          selecting a name auto-fills their Employee Code.
+        </p>
+        <div class="field-row">
+          <div class="field" style="margin-bottom: 0;">
+            <label for="new-auditor-name-input">Auditor name</label>
+            <input type="text" id="new-auditor-name-input" placeholder="e.g. Arun Mathiyazhagan" />
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label for="new-auditor-code-input">Employee code</label>
+            <input type="text" id="new-auditor-code-input" placeholder="e.g. ORO00320" />
+          </div>
+        </div>
+        <p id="add-auditor-error" style="font-size: 13px; color: var(--fail-bright); display: none; margin: 10px 0;"></p>
+        <p id="add-auditor-success" style="font-size: 13px; color: var(--pass-bright); display: none; margin: 10px 0;"></p>
+        <button type="button" id="add-auditor-btn" class="btn btn-primary" style="margin-top: 10px;">Add Auditor</button>
+      </div>
+
+      <p class="section-label">Current auditors</p>
+      <div id="auditor-list-display"></div>
     </div>
   </main>
 

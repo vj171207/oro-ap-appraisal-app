@@ -232,6 +232,25 @@ Everything (AP lookups, calibration filtering, reports) matches on this
 string exactly; a casing or spelling mismatch will silently produce a
 "phantom" city with no data, or fail AP lookups for that city.
 
+## Managing the auditor list (Settings page)
+
+The "Audit Official Name" field on the calibration form used to be free
+text. It's now a dropdown, populated from `config/auditors` (field `list`,
+an array of `{name, empCode}` objects) — also managed from the Settings
+page, same Manager-only access as the city list. Selecting a name
+auto-fills their Employee Code (which remains editable, in case it's
+wrong or out of date, same philosophy as the AP lookup).
+
+**One-time setup:** create a document with ID `auditors` inside the
+`config` collection (same collection as `cities` and `managers` above),
+with one field:
+- `list` (array of maps) — each entry needs both `name` and `empCode`
+  fields. Can start empty — Settings can add the first entries once this
+  document exists.
+
+Settings checks for both a duplicate name and a duplicate employee code
+before adding a new auditor, to catch accidental double-entry.
+
 ## Known gaps / next steps
 
 - [ ] Firebase Auth + role-based access (auditor / manager / city head)

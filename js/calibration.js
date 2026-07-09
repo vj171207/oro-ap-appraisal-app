@@ -47,6 +47,35 @@ async function main() {
 
   populateDateDropdowns();
 
+  // ---- Auditor dropdown (config/auditors, managed via Settings) ----
+
+  const auditorNameSelect = document.getElementById("auditorName");
+  const auditorEmpCodeInput = document.getElementById("auditorEmpCode");
+  let auditorList = [];
+
+  async function loadAuditors() {
+    try {
+      const snap = await getDoc(doc(db, "config", "auditors"));
+      auditorList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+    } catch (err) {
+      console.error("Couldn't load auditor list.", err);
+      auditorList = [];
+    }
+
+    auditorNameSelect.innerHTML =
+      `<option value="" disabled selected>Select…</option>` +
+      auditorList
+        .map((a) => `<option value="${escapeHtml(a.name)}">${escapeHtml(a.name)}</option>`)
+        .join("");
+  }
+
+  auditorNameSelect.addEventListener("change", () => {
+    const match = auditorList.find((a) => a.name === auditorNameSelect.value);
+    auditorEmpCodeInput.value = match ? match.empCode : "";
+  });
+
+  loadAuditors();
+
   // ---- AP roster lookup (from the synced Google Sheet, via Firestore) ----
 
   const apEmpCodeInput = document.getElementById("apEmpCode");

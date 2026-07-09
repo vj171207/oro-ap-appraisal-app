@@ -23,6 +23,11 @@
 // Auditor-role accounts.
 
 const PROJECT_ID = "oro-appraisalcalib";
+const ALLOWED_DOMAIN = "orocorp.in";
+
+function isAllowedEmail(email) {
+  return typeof email === "string" && email.toLowerCase().trim().endsWith(`@${ALLOWED_DOMAIN}`);
+}
 
 async function verifyCallerToken(idToken, apiKey) {
   const res = await fetch(
@@ -105,6 +110,9 @@ export default async function handler(req, res) {
   }
   if (password.length < 6) {
     return res.status(400).json({ error: "Password must be at least 6 characters." });
+  }
+  if (!isAllowedEmail(email)) {
+    return res.status(400).json({ error: `Email must be an @${ALLOWED_DOMAIN} address — this app only accepts Oro accounts.` });
   }
 
   const apiKey = process.env.FIREBASE_API_KEY;

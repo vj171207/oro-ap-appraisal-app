@@ -612,6 +612,24 @@ body.index-page main {
   width: 100%;
 }
 
+.filter-row input[type="date"] {
+  cursor: pointer;
+}
+
+/* Native calendar icon: default rendering is a dark icon that's nearly
+   invisible against our dark background. invert(1) makes it white; the
+   drop-shadow tints it toward the app's gold accent without needing to
+   fight the browser's inability to recolor this icon directly. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) drop-shadow(0 0 0 var(--accent));
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .filter-row label {
   font-size: 10px;
   white-space: nowrap;

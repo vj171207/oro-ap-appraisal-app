@@ -25,6 +25,7 @@ export function requireAuth() {
     onAuthStateChanged(auth, (user) => {
       if (user && isAllowedEmail(user.email)) {
         renderUserBar(user);
+        wireDatePickerClicks();
         resolve(user);
       } else {
         if (user) {
@@ -58,6 +59,29 @@ async function renderUserBar(user) {
   document.getElementById("sign-out-btn").addEventListener("click", async () => {
     await signOut(auth);
     window.location.href = "login.html";
+  });
+}
+
+/**
+ * Native <input type="date"> only opens its picker when you click the tiny
+ * calendar icon by default — clicking the rest of the field just places a
+ * text cursor. showPicker() (supported in modern Chromium/Edge, and recent
+ * Safari) lets a click anywhere in the field open the picker instead.
+ * Falls back to default behavior silently on browsers without showPicker.
+ */
+function wireDatePickerClicks() {
+  document.querySelectorAll('input[type="date"]').forEach((input) => {
+    if (input.dataset.pickerWired) return; // avoid double-binding if called more than once
+    input.dataset.pickerWired = "true";
+    input.addEventListener("click", () => {
+      if (typeof input.showPicker === "function") {
+        try {
+          input.showPicker();
+        } catch (err) {
+          // Some browsers throw if the input isn't visible/focusable yet — safe to ignore.
+        }
+      }
+    });
   });
 }
 

@@ -11,7 +11,7 @@
   <header class="app-header">
     <div id="user-bar" class="user-bar"></div>
     <a href="index.html" class="back-link">&larr; All cities</a>
-    <p class="eyebrow">Oro · Lending Services Audit</p>
+    <p class="eyebrow">Made for ORO.</p>
     <h1>All-Cities Report</h1>
   </header>
 
@@ -24,8 +24,19 @@
       </p>
 
       <div class="field">
-        <label for="date-range-select">Date range</label>
-        <select id="date-range-select"></select>
+        <label for="quick-range-select">Quick range</label>
+        <select id="quick-range-select"></select>
+      </div>
+
+      <div class="filter-row">
+        <div class="field" style="margin-bottom: 0;">
+          <label for="from-date-input">From</label>
+          <input type="date" id="from-date-input" />
+        </div>
+        <div class="field" style="margin-bottom: 0;">
+          <label for="to-date-input">To</label>
+          <input type="date" id="to-date-input" />
+        </div>
       </div>
 
       <div id="summary-line" style="font-size: 13px; color: var(--text-muted); margin: 10px 0 16px;"></div>

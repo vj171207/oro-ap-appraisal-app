@@ -1,19 +1,28 @@
 import { requireAuth } from "./authGuard.js";
 import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
 import { getCities } from "./cities.js";
-import { DATE_RANGE_OPTIONS, filterByDateRange, downloadMultiCityWorkbook } from "./exportExcel.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, downloadMultiCityWorkbook } from "./exportExcel.js";
 
 async function main() {
   await requireAuth();
 
   const cities = await getCities();
-  const dateRangeSelect = document.getElementById("date-range-select");
+  const quickRangeSelect = document.getElementById("quick-range-select");
+  const fromDateInput = document.getElementById("from-date-input");
+  const toDateInput = document.getElementById("to-date-input");
   const exportBtn = document.getElementById("export-btn");
   const summaryLine = document.getElementById("summary-line");
 
-  dateRangeSelect.innerHTML = DATE_RANGE_OPTIONS.map(
+  quickRangeSelect.innerHTML = QUICK_RANGE_OPTIONS.map(
     (opt) => `<option value="${opt.value}">${opt.label}</option>`
   ).join("");
+
+  quickRangeSelect.addEventListener("change", () => {
+    const dates = getQuickRangeDates(quickRangeSelect.value);
+    fromDateInput.value = dates.from;
+    toDateInput.value = dates.to;
+    updateSummary();
+  });
 
   let allRecords = [];
 
@@ -34,14 +43,15 @@ async function main() {
   }
 
   function updateSummary() {
-    const filtered = filterByDateRange(allRecords, dateRangeSelect.value);
+    const filtered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
     summaryLine.textContent = `${filtered.length} record${filtered.length === 1 ? "" : "s"} across all cities match this range.`;
   }
 
-  dateRangeSelect.addEventListener("change", updateSummary);
+  fromDateInput.addEventListener("change", updateSummary);
+  toDateInput.addEventListener("change", updateSummary);
 
   exportBtn.addEventListener("click", async () => {
-    const filtered = filterByDateRange(allRecords, dateRangeSelect.value);
+    const filtered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
     if (filtered.length === 0) {
       alert("No records match this date range — nothing to export.");
       return;
@@ -58,8 +68,8 @@ async function main() {
       return (a.testDate || "").localeCompare(b.testDate || "");
     });
 
-    const rangeLabel = DATE_RANGE_OPTIONS.find((o) => o.value === dateRangeSelect.value)?.label || "All time";
-    const rangeSlug = rangeLabel.replace(/\s+/g, "");
+    const rangeLabel = describeRange(fromDateInput.value, toDateInput.value);
+    const rangeSlug = (fromDateInput.value || "start") + "_to_" + (toDateInput.value || "now");
     const dateStamp = new Date().toISOString().slice(0, 10);
     const filename = `Oro_AllCities_Calibration_${rangeSlug}_${dateStamp}.xlsx`;
 
@@ -76,8 +86,15 @@ async function main() {
     }
   });
 
-  loadAll();
+  /** Human-readable description of a From/To window, for the report's subtitle. */
+  function describeRange(from, to) {
+    if (!from && !to) return "All time";
+    if (from && to) return `${from} to ${to}`;
+    if (from) return `From ${from}`;
+    return `Up to ${to}`;
+  }
 
+  loadAll();
 }
 
 main();

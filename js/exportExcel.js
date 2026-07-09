@@ -11,64 +11,33 @@
 // professional visual design (wider columns, softer colors, a title block)
 // instead of the original's cramped defaults and harsh bright colors.
 
-export const DATE_RANGE_OPTIONS = [
+// Quick Range only pre-fills the From/To date inputs — it's a convenience,
+// not the actual filter mechanism. The From/To values themselves (editable
+// afterward for a fully custom range) are what filterByDateWindow uses.
+export const QUICK_RANGE_OPTIONS = [
   { value: "all", label: "All time" },
   { value: "last3", label: "Last 3 months" },
-  { value: "last6", label: "Last 6 months" },
-  { value: "last12", label: "Last 12 months" },
-  { value: "currentQ", label: "Current quarter" },
-  { value: "prevQ", label: "Previous quarter" },
 ];
 
-/** Returns {start, end} Date bounds for a given range key, or null for "all". */
-export function getDateRangeBounds(rangeKey, now = new Date()) {
-  const startOfQuarter = (year, q) => new Date(year, q * 3, 1);
-  const endOfQuarter = (year, q) => new Date(year, q * 3 + 3, 0, 23, 59, 59, 999);
+/** Returns {from, to} as "YYYY-MM-DD" strings for a quick-range key, or {from:"", to:""} for "all" (i.e. unbounded/clear). */
+export function getQuickRangeDates(rangeKey, now = new Date()) {
+  const toIso = (d) => d.toISOString().slice(0, 10);
 
-  switch (rangeKey) {
-    case "all":
-      return null;
-    case "last3": {
-      const start = new Date(now);
-      start.setMonth(start.getMonth() - 3);
-      return { start, end: now };
-    }
-    case "last6": {
-      const start = new Date(now);
-      start.setMonth(start.getMonth() - 6);
-      return { start, end: now };
-    }
-    case "last12": {
-      const start = new Date(now);
-      start.setMonth(start.getMonth() - 12);
-      return { start, end: now };
-    }
-    case "currentQ": {
-      const q = Math.floor(now.getMonth() / 3);
-      return { start: startOfQuarter(now.getFullYear(), q), end: endOfQuarter(now.getFullYear(), q) };
-    }
-    case "prevQ": {
-      let q = Math.floor(now.getMonth() / 3) - 1;
-      let year = now.getFullYear();
-      if (q < 0) {
-        q = 3;
-        year -= 1;
-      }
-      return { start: startOfQuarter(year, q), end: endOfQuarter(year, q) };
-    }
-    default:
-      return null;
+  if (rangeKey === "last3") {
+    const start = new Date(now);
+    start.setMonth(start.getMonth() - 3);
+    return { from: toIso(start), to: toIso(now) };
   }
+  return { from: "", to: "" };
 }
 
-/** Filters records by their testDate falling within the given range key's bounds. */
-export function filterByDateRange(records, rangeKey, now = new Date()) {
-  const bounds = getDateRangeBounds(rangeKey, now);
-  if (!bounds) return records;
+/** Filters records whose testDate falls within [fromStr, toStr] (inclusive). Empty string on either side means unbounded on that side. Both testDate and fromStr/toStr are "YYYY-MM-DD", so plain string comparison is correct. */
+export function filterByDateWindow(records, fromStr, toStr) {
   return records.filter((r) => {
     if (!r.testDate) return false;
-    const d = new Date(r.testDate);
-    return d >= bounds.start && d <= bounds.end;
+    if (fromStr && r.testDate < fromStr) return false;
+    if (toStr && r.testDate > toStr) return false;
+    return true;
   });
 }
 

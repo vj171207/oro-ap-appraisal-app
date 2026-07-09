@@ -43,26 +43,17 @@ async function renderUserBar(user) {
   const bar = document.getElementById("user-bar");
   if (!bar) return;
 
-  let managerStatus = false;
-  let debugNote = "";
-  try {
-    managerStatus = await isManagerEmail(user.email);
-    debugNote = `manager check: ${managerStatus}`;
-  } catch (err) {
-    debugNote = `manager check threw: ${err.code || err.message || err}`;
-  }
-
+  const managerStatus = await isManagerEmail(user.email);
   const settingsLinkHtml = managerStatus
-    ? `<a href="settings.html" class="user-bar-settings-link">⚙ Settings</a>`
+    ? `<a href="settings.html" class="user-bar-pill">⚙ Settings</a>`
     : "";
 
   bar.innerHTML = `
     <div class="user-bar-row">
       <span class="user-bar-name">${escapeHtml(user.displayName || user.email)}</span>
-      <button type="button" id="sign-out-btn" class="user-bar-signout">Sign out</button>
+      <button type="button" id="sign-out-btn" class="user-bar-pill">Sign out</button>
     </div>
     ${settingsLinkHtml}
-    <span class="user-bar-debug" title="Temporary diagnostic — remove once Settings visibility is confirmed working">${escapeHtml(debugNote)}</span>
   `;
   document.getElementById("sign-out-btn").addEventListener("click", async () => {
     await signOut(auth);

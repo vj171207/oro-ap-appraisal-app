@@ -1,7 +1,7 @@
 import { requireAuth } from "./authGuard.js";
 import { getCities } from "./cities.js";
 import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
-import { DATE_RANGE_OPTIONS, filterByDateRange } from "./exportExcel.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow } from "./exportExcel.js";
 
 async function main() {
   await requireAuth();
@@ -26,12 +26,20 @@ async function main() {
   const statPassEl = document.getElementById("stat-pass");
   const statFailEl = document.getElementById("stat-fail");
   const resultFilterSelect = document.getElementById("result-filter-select");
-  const dateRangeSelect = document.getElementById("date-range-select");
+  const quickRangeSelect = document.getElementById("quick-range-select");
+  const fromDateInput = document.getElementById("from-date-input");
+  const toDateInput = document.getElementById("to-date-input");
   const applyBtn = document.getElementById("apply-filters-btn");
 
-  dateRangeSelect.innerHTML = DATE_RANGE_OPTIONS.map(
+  quickRangeSelect.innerHTML = QUICK_RANGE_OPTIONS.map(
     (opt) => `<option value="${opt.value}">${opt.label}</option>`
   ).join("");
+
+  quickRangeSelect.addEventListener("change", () => {
+    const dates = getQuickRangeDates(quickRangeSelect.value);
+    fromDateInput.value = dates.from;
+    toDateInput.value = dates.to;
+  });
 
   let allRecords = [];
 
@@ -52,7 +60,7 @@ async function main() {
   }
 
   function applyFilters() {
-    let filtered = filterByDateRange(allRecords, dateRangeSelect.value);
+    let filtered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
     const resultFilter = resultFilterSelect.value;
     if (resultFilter !== "all") {
       filtered = filtered.filter((d) => d.result === resultFilter);

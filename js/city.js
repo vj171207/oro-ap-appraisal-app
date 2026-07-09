@@ -1,6 +1,6 @@
 import { requireAuth } from "./authGuard.js";
 import { db, collection, getDocs, query, where, orderBy } from "./firebase-config.js";
-import { DATE_RANGE_OPTIONS, filterByDateRange, downloadSingleSheetWorkbook } from "./exportExcel.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, downloadSingleSheetWorkbook } from "./exportExcel.js";
 
 async function main() {
   await requireAuth();
@@ -21,7 +21,9 @@ async function main() {
   const statPassEl = document.getElementById("stat-pass");
   const statFailEl = document.getElementById("stat-fail");
   const resultFilterSelect = document.getElementById("result-filter-select");
-  const dateRangeSelect = document.getElementById("date-range-select");
+  const quickRangeSelect = document.getElementById("quick-range-select");
+  const fromDateInput = document.getElementById("from-date-input");
+  const toDateInput = document.getElementById("to-date-input");
   const applyBtn = document.getElementById("apply-filters-btn");
   const exportBtn = document.getElementById("export-btn");
 
@@ -31,14 +33,24 @@ async function main() {
 
   let allRecords = []; // fetched once from Firestore
   // "Applied" values are what's actually driving the current view. They only
-  // change when the Apply button is clicked — the dropdowns can be changed
-  // freely without affecting anything until then.
+  // change when the Apply button is clicked — the dropdowns/date inputs can
+  // be changed freely without affecting anything until then.
   let appliedResultFilter = "all";
-  let appliedDateRange = "all";
+  let appliedFrom = "";
+  let appliedTo = "";
 
-  dateRangeSelect.innerHTML = DATE_RANGE_OPTIONS.map(
+  quickRangeSelect.innerHTML = QUICK_RANGE_OPTIONS.map(
     (opt) => `<option value="${opt.value}">${opt.label}</option>`
   ).join("");
+
+  // Picking a Quick Range preset pre-fills From/To immediately — but the
+  // actual filtering only happens on Apply, and From/To can still be
+  // hand-edited afterward for a custom range.
+  quickRangeSelect.addEventListener("change", () => {
+    const dates = getQuickRangeDates(quickRangeSelect.value);
+    fromDateInput.value = dates.from;
+    toDateInput.value = dates.to;
+  });
 
   async function loadHistory() {
     try {
@@ -60,7 +72,7 @@ async function main() {
   }
 
   function getAppliedRecords() {
-    let records = filterByDateRange(allRecords, appliedDateRange);
+    let records = filterByDateWindow(allRecords, appliedFrom, appliedTo);
     if (appliedResultFilter !== "all") {
       records = records.filter((d) => d.result === appliedResultFilter);
     }
@@ -70,7 +82,8 @@ async function main() {
   /** Called on load and whenever Apply is clicked — updates both the stats panel and the list together, based on the currently applied filters. */
   function applyFilters() {
     appliedResultFilter = resultFilterSelect.value;
-    appliedDateRange = dateRangeSelect.value;
+    appliedFrom = fromDateInput.value;
+    appliedTo = toDateInput.value;
 
     const filtered = getAppliedRecords();
     renderStats(filtered);
@@ -149,8 +162,8 @@ async function main() {
       alert("No records match the current filters — nothing to export.");
       return;
     }
-    const rangeLabel = DATE_RANGE_OPTIONS.find((o) => o.value === appliedDateRange)?.label || "All time";
-    const rangeSlug = rangeLabel.replace(/\s+/g, "");
+    const rangeLabel = describeRange(appliedFrom, appliedTo);
+    const rangeSlug = (appliedFrom || "start") + "_to_" + (appliedTo || "now");
     const resultLabel = appliedResultFilter === "all" ? "" : `_${appliedResultFilter}`;
     const dateStamp = new Date().toISOString().slice(0, 10);
     const filename = `${city}_${rangeSlug}${resultLabel}_${dateStamp}.xlsx`;
@@ -167,6 +180,14 @@ async function main() {
       exportBtn.textContent = "⬇ Export to Excel";
     }
   });
+
+  /** Human-readable description of a From/To window, for the report's subtitle. */
+  function describeRange(from, to) {
+    if (!from && !to) return "All time";
+    if (from && to) return `${from} to ${to}`;
+    if (from) return `From ${from}`;
+    return `Up to ${to}`;
+  }
 
   function buildDetailHtml(d) {
     const needleRows = (d.needles || [])

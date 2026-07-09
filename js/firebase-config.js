@@ -23,7 +23,7 @@ import {
   onAuthStateChanged,
   signOut,
   setPersistence,
-  inMemoryPersistence,
+  browserSessionPersistence,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -40,12 +40,18 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Deliberately NOT the default persistence (which survives browser restarts
-// via storage). In-memory persistence means the signed-in session exists
-// only in JS memory for this page load — any refresh, tab close, or new
-// tab requires signing in again. This is an explicit security choice for
-// this app, not Firebase's default behavior.
-await setPersistence(auth, inMemoryPersistence);
+// Deliberately NOT the default persistence (which survives browser
+// restarts indefinitely, via storage). Session persistence survives normal
+// navigation between pages AND an intentional refresh within the same
+// browser tab, but is cleared the moment the tab or browser is closed —
+// meaningfully stricter than the default, without breaking the app itself.
+//
+// NOTE: in-memory persistence was tried first and reverted — it broke
+// every internal page navigation, not just refreshes, because this is a
+// traditional multi-page site (every navigation is a full page reload,
+// indistinguishable from a refresh to the browser). Do not switch back to
+// inMemoryPersistence without first converting this to a single-page app.
+await setPersistence(auth, browserSessionPersistence);
 
 export {
   db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, updateDoc, arrayUnion, Timestamp,

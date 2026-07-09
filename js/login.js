@@ -47,9 +47,21 @@ function getNextUrl() {
   return "index.html";
 }
 
-// If already signed in with a valid account, skip the form entirely.
-onAuthStateChanged(auth, (user) => {
-  if (user && isAllowedEmail(user.email)) {
+// If already signed in with a valid account, skip the form entirely —
+// UNLESS this page load was an actual browser refresh, in which case we
+// force a sign-out so the form is genuinely shown, not bypassed silently.
+function wasPageReloaded() {
+  const entries = performance.getEntriesByType("navigation");
+  return entries.length > 0 && entries[0].type === "reload";
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  if (wasPageReloaded()) {
+    await signOut(auth);
+    return;
+  }
+  if (isAllowedEmail(user.email)) {
     window.location.href = getNextUrl();
   }
 });

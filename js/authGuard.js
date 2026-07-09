@@ -17,15 +17,35 @@ function isAllowedEmail(email) {
   return typeof email === "string" && email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`);
 }
 
+/** True if THIS page load was a browser refresh (F5 / reload button), as opposed to a normal navigation (clicking a link, or our own post-login redirect) — these are indistinguishable to Firebase's session persistence, but the browser itself tracks the difference. */
+function wasPageReloaded() {
+  const entries = performance.getEntriesByType("navigation");
+  return entries.length > 0 && entries[0].type === "reload";
+}
+
 /**
  * Resolves once the user's auth state is confirmed valid. Redirects to
- * login.html (with a `next` param to return to) if not signed in or not an
- * allowed domain. Never resolves in the redirect case — the page navigates
- * away instead.
+ * login.html (with a `next` param to return to) if not signed in, not an
+ * allowed domain, or if this specific page load was an actual browser
+ * refresh (session persistence otherwise correctly keeps you signed in
+ * across normal in-app navigation, which we deliberately don't want to
+ * break — this refresh check is what makes "refresh forces a fresh
+ * sign-in" work without also logging people out every time they click a
+ * link within the app). Never resolves in the redirect case — the page
+ * navigates away instead.
  */
 export function requireAuth() {
   return new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
+    const forceReauth = wasPageReloaded();
+
+    onAuthStateChanged(auth, async (user) => {
+      if (forceReauth && user) {
+        await signOut(auth);
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `login.html?next=${next}`;
+        return;
+      }
+
       if (user && isAllowedEmail(user.email)) {
         renderUserBar(user);
         wireDatePickerClicks();

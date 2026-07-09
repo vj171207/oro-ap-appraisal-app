@@ -1,6 +1,21 @@
 import { requireAuth, isManagerEmail } from "./authGuard.js";
 import { db, doc, getDoc, updateDoc, arrayUnion } from "./firebase-config.js";
 
+/** Normalizes to Title Case regardless of input casing — "indore" / "INDORE" / "InDoRe" all become "Indore". Multi-word names are handled per-word ("new delhi" -> "New Delhi"). */
+function toTitleCase(str) {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1) : word))
+    .join(" ");
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 async function main() {
   const user = await requireAuth();
 
@@ -11,84 +26,10 @@ async function main() {
   }
   document.getElementById("settings-content").style.display = "block";
 
-  const cityListEl = document.getElementById("city-list-display");
-  const newCityInput = document.getElementById("new-city-input");
-  const addCityBtn = document.getElementById("add-city-btn");
-  const errorEl = document.getElementById("add-city-error");
-  const successEl = document.getElementById("add-city-success");
-
-  const citiesDocRef = doc(db, "config", "cities");
-
-  async function loadCities() {
-    const snap = await getDoc(citiesDocRef);
-    const list = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
-    renderCities(list);
-    return list;
-  }
-
-  function renderCities(list) {
-    if (list.length === 0) {
-      cityListEl.innerHTML = `<div class="empty-state">No cities configured yet.</div>`;
-      return;
-    }
-    cityListEl.innerHTML = list
-      .map((c) => `<div class="city-row" style="cursor: default;"><span class="name">${escapeHtml(c)}</span></div>`)
-      .join("");
-  }
-
-  function clearMessages() {
-    errorEl.style.display = "none";
-    successEl.style.display = "none";
-  }
-
-  addCityBtn.addEventListener("click", async () => {
-    clearMessages();
-    const newCity = newCityInput.value.trim();
-
-    if (!newCity) {
-      errorEl.textContent = "Enter a city name first.";
-      errorEl.style.display = "block";
-      return;
-    }
-
-    const currentList = await loadCities();
-    const isDuplicate = currentList.some((c) => c.toLowerCase() === newCity.toLowerCase());
-    if (isDuplicate) {
-      errorEl.textContent = `"${newCity}" already exists in the list (check for a near-match, e.g. casing).`;
-      errorEl.style.display = "block";
-      return;
-    }
-
-    addCityBtn.disabled = true;
-    addCityBtn.textContent = "Adding…";
-
-    try {
-      await updateDoc(citiesDocRef, { list: arrayUnion(newCity) });
-      successEl.textContent = `"${newCity}" added. It will now appear in the city list and can be used for AP roster locations.`;
-      successEl.style.display = "block";
-      newCityInput.value = "";
-      await loadCities();
-    } catch (err) {
-      console.error(err);
-      errorEl.textContent = "Couldn't add the city. Please try again.";
-      errorEl.style.display = "block";
-    } finally {
-      addCityBtn.disabled = false;
-      addCityBtn.textContent = "Add City";
-    }
-  });
-
-  function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  loadCities();
-
   // ---- Auditors ----
 
   const auditorListEl = document.getElementById("auditor-list-display");
+  const toggleAuditorsBtn = document.getElementById("toggle-auditors-btn");
   const newAuditorNameInput = document.getElementById("new-auditor-name-input");
   const newAuditorCodeInput = document.getElementById("new-auditor-code-input");
   const addAuditorBtn = document.getElementById("add-auditor-btn");
@@ -96,11 +37,13 @@ async function main() {
   const auditorSuccessEl = document.getElementById("add-auditor-success");
 
   const auditorsDocRef = doc(db, "config", "auditors");
+  let auditorsExpanded = false;
 
   async function loadAuditors() {
     const snap = await getDoc(auditorsDocRef);
     const list = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
     renderAuditors(list);
+    updateToggleLabel(toggleAuditorsBtn, "auditors", list.length, auditorsExpanded);
     return list;
   }
 
@@ -124,6 +67,12 @@ async function main() {
     auditorErrorEl.style.display = "none";
     auditorSuccessEl.style.display = "none";
   }
+
+  toggleAuditorsBtn.addEventListener("click", () => {
+    auditorsExpanded = !auditorsExpanded;
+    auditorListEl.style.display = auditorsExpanded ? "block" : "none";
+    loadAuditors();
+  });
 
   addAuditorBtn.addEventListener("click", async () => {
     clearAuditorMessages();
@@ -170,7 +119,98 @@ async function main() {
     }
   });
 
+  // ---- Cities ----
+
+  const cityListEl = document.getElementById("city-list-display");
+  const toggleCitiesBtn = document.getElementById("toggle-cities-btn");
+  const newCityInput = document.getElementById("new-city-input");
+  const addCityBtn = document.getElementById("add-city-btn");
+  const errorEl = document.getElementById("add-city-error");
+  const successEl = document.getElementById("add-city-success");
+
+  const citiesDocRef = doc(db, "config", "cities");
+  let citiesExpanded = false;
+
+  async function loadCities() {
+    const snap = await getDoc(citiesDocRef);
+    const list = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+    renderCities(list);
+    updateToggleLabel(toggleCitiesBtn, "cities", list.length, citiesExpanded);
+    return list;
+  }
+
+  function renderCities(list) {
+    if (list.length === 0) {
+      cityListEl.innerHTML = `<div class="empty-state">No cities configured yet.</div>`;
+      return;
+    }
+    cityListEl.innerHTML = list
+      .map((c) => `<div class="city-row" style="cursor: default;"><span class="name">${escapeHtml(c)}</span></div>`)
+      .join("");
+  }
+
+  function clearMessages() {
+    errorEl.style.display = "none";
+    successEl.style.display = "none";
+  }
+
+  toggleCitiesBtn.addEventListener("click", () => {
+    citiesExpanded = !citiesExpanded;
+    cityListEl.style.display = citiesExpanded ? "block" : "none";
+    loadCities();
+  });
+
+  addCityBtn.addEventListener("click", async () => {
+    clearMessages();
+    const rawInput = newCityInput.value.trim();
+
+    if (!rawInput) {
+      errorEl.textContent = "Enter a city name first.";
+      errorEl.style.display = "block";
+      return;
+    }
+
+    // Spelling still must match the AP roster exactly, but casing is
+    // normalized automatically — "indore" and "INDORE" both save as "Indore".
+    const newCity = toTitleCase(rawInput);
+
+    const currentList = await loadCities();
+    const isDuplicate = currentList.some((c) => c.toLowerCase() === newCity.toLowerCase());
+    if (isDuplicate) {
+      errorEl.textContent = `"${newCity}" already exists in the list.`;
+      errorEl.style.display = "block";
+      return;
+    }
+
+    addCityBtn.disabled = true;
+    addCityBtn.textContent = "Adding…";
+
+    try {
+      await updateDoc(citiesDocRef, { list: arrayUnion(newCity) });
+      successEl.textContent = `"${newCity}" added. It will now appear in the city list and can be used for AP roster locations.`;
+      successEl.style.display = "block";
+      newCityInput.value = "";
+      await loadCities();
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = "Couldn't add the city. Please try again.";
+      errorEl.style.display = "block";
+    } finally {
+      addCityBtn.disabled = false;
+      addCityBtn.textContent = "Add City";
+    }
+  });
+
+  // ---- Shared toggle-label helper ----
+
+  function updateToggleLabel(btn, noun, count, expanded) {
+    const arrow = expanded ? "▾" : "▸";
+    const verb = expanded ? "Hide" : "Show";
+    btn.textContent = `${arrow} ${verb} current ${noun} (${count})`;
+  }
+
   loadAuditors();
+  loadCities();
 }
 
 main();

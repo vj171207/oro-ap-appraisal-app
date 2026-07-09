@@ -24,26 +24,6 @@
 
     <div id="settings-content" style="display: none;">
       <div class="card">
-        <h2>Add a city</h2>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
-          <strong>Spelling must exactly match</strong> how the city appears
-          in the AP roster sheet's "Location" column — a mismatch (even in
-          casing) will cause AP lookups and calibration filtering to
-          silently miss records for that city.
-        </p>
-        <div class="field">
-          <label for="new-city-input">City name</label>
-          <input type="text" id="new-city-input" placeholder="e.g. Coimbatore" />
-        </div>
-        <p id="add-city-error" style="font-size: 13px; color: var(--fail-bright); display: none; margin-bottom: 10px;"></p>
-        <p id="add-city-success" style="font-size: 13px; color: var(--pass-bright); display: none; margin-bottom: 10px;"></p>
-        <button type="button" id="add-city-btn" class="btn btn-primary">Add City</button>
-      </div>
-
-      <p class="section-label">Current cities</p>
-      <div id="city-list-display" class="city-list"></div>
-
-      <div class="card" style="margin-top: 24px;">
         <h2>Add an auditor</h2>
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
           Auditors added here appear as a dropdown on the calibration form —
@@ -64,8 +44,27 @@
         <button type="button" id="add-auditor-btn" class="btn btn-primary" style="margin-top: 10px;">Add Auditor</button>
       </div>
 
-      <p class="section-label">Current auditors</p>
-      <div id="auditor-list-display"></div>
+      <button type="button" id="toggle-auditors-btn" class="toggle-list-btn">▸ Show current auditors</button>
+      <div id="auditor-list-display" style="display: none; margin-top: 8px;"></div>
+
+      <div class="card" style="margin-top: 28px;">
+        <h2>Add a city</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
+          <strong>Spelling must match</strong> how the city appears in the AP
+          roster sheet's "Location" column (casing is handled automatically —
+          it'll be saved and shown in Title Case regardless of how you type it).
+        </p>
+        <div class="field">
+          <label for="new-city-input">City name</label>
+          <input type="text" id="new-city-input" placeholder="e.g. Coimbatore" />
+        </div>
+        <p id="add-city-error" style="font-size: 13px; color: var(--fail-bright); display: none; margin-bottom: 10px;"></p>
+        <p id="add-city-success" style="font-size: 13px; color: var(--pass-bright); display: none; margin-bottom: 10px;"></p>
+        <button type="button" id="add-city-btn" class="btn btn-primary">Add City</button>
+      </div>
+
+      <button type="button" id="toggle-cities-btn" class="toggle-list-btn">▸ Show current cities</button>
+      <div id="city-list-display" class="city-list" style="display: none; margin-top: 8px;"></div>
     </div>
   </main>
 

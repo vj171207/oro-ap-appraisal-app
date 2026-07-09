@@ -852,6 +852,24 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   padding: 32px 16px;
 }
 
+.toggle-list-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.toggle-list-btn:hover {
+  text-decoration: underline;
+}
+
 .section-label {
   font-size: 12px;
   font-weight: 600;

@@ -11,9 +11,18 @@
 //    meant every such bug needed a screenshot round-trip to diagnose.
 //    This makes the failure visible immediately, on-screen, for anyone.
 
+function getStackContainer() {
+  let stack = document.getElementById("toast-stack");
+  if (!stack) {
+    stack = document.createElement("div");
+    stack.id = "toast-stack";
+    document.body.appendChild(stack);
+  }
+  return stack;
+}
+
 export function showToast(message, variant = "error") {
-  const existing = document.querySelector(".toast-error");
-  if (existing) existing.remove();
+  const stack = getStackContainer();
 
   const toast = document.createElement("div");
   toast.className = "toast-error";
@@ -28,7 +37,9 @@ export function showToast(message, variant = "error") {
   // contain arbitrary characters from a stack trace) can't inject markup.
   toast.querySelector(".toast-message").textContent = message;
 
-  document.body.appendChild(toast);
+  // Newest toast appears at the top of the stack, above older ones —
+  // prepend rather than append.
+  stack.prepend(toast);
 
   const remove = () => toast.remove();
   toast.querySelector(".toast-close").addEventListener("click", remove);

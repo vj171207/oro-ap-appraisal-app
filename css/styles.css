@@ -292,13 +292,21 @@ footer.app-footer {
 
 /* ---------- Toast (higher-visibility error, e.g. cross-city AP lookup) ---------- */
 
-.toast-error {
+#toast-stack {
   position: fixed;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
   max-width: 480px;
   width: calc(100% - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.toast-error {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -307,8 +315,8 @@ footer.app-footer {
   border-radius: var(--radius);
   padding: 14px 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  z-index: 100;
   animation: toast-in 0.2s ease;
+  pointer-events: auto;
 }
 
 .toast-error.toast-info {
@@ -322,8 +330,8 @@ footer.app-footer {
 }
 
 @keyframes toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .toast-icon {

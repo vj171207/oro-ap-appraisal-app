@@ -25,6 +25,7 @@ async function main() {
   const statTotalEl = document.getElementById("stat-total");
   const statPassEl = document.getElementById("stat-pass");
   const statFailEl = document.getElementById("stat-fail");
+  const statClearanceEl = document.getElementById("stat-clearance");
   const resultFilterSelect = document.getElementById("result-filter-select");
   const quickRangeSelect = document.getElementById("quick-range-select");
   const fromDateInput = document.getElementById("from-date-input");
@@ -56,6 +57,7 @@ async function main() {
       statTotalEl.textContent = "—";
       statPassEl.textContent = "—";
       statFailEl.textContent = "—";
+      statClearanceEl.textContent = "—";
     }
   }
 
@@ -68,9 +70,11 @@ async function main() {
     const total = filtered.length;
     const passCount = filtered.filter((d) => d.result === "Pass").length;
     const failCount = filtered.filter((d) => d.result === "Fail").length;
+    const clearance = total > 0 ? ((passCount / total) * 100).toFixed(1) : "—";
     statTotalEl.textContent = total;
     statPassEl.textContent = passCount;
     statFailEl.textContent = failCount;
+    statClearanceEl.textContent = clearance === "—" ? "—" : `${clearance}%`;
   }
 
   applyBtn.addEventListener("click", applyFilters);

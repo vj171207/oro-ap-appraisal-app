@@ -59,7 +59,13 @@ async function main() {
       const snap = await getDoc(doc(db, "config", "auditors"));
       const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
       auditorList = rawList.filter(
-        (a) => a && typeof a === "object" && typeof a.name === "string" && typeof a.empCode === "string"
+        (a) =>
+          a &&
+          typeof a === "object" &&
+          typeof a.name === "string" &&
+          a.name.trim().length > 0 &&
+          typeof a.empCode === "string" &&
+          a.empCode.trim().length > 0
       );
     } catch (err) {
       console.error("Couldn't load auditor list.", err);

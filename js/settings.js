@@ -49,7 +49,13 @@ async function main() {
     // {name, empCode} object) should be silently dropped here, not crash
     // the whole page the way a bare .toLowerCase() on undefined would.
     const list = rawList.filter(
-      (a) => a && typeof a === "object" && typeof a.name === "string" && typeof a.empCode === "string"
+      (a) =>
+        a &&
+        typeof a === "object" &&
+        typeof a.name === "string" &&
+        a.name.trim().length > 0 &&
+        typeof a.empCode === "string" &&
+        a.empCode.trim().length > 0
     );
     if (list.length !== rawList.length) {
       console.warn(`config/auditors contains ${rawList.length - list.length} malformed entr(y/ies) — ignored. Check Firestore Console.`);

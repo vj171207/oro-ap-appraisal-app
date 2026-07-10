@@ -86,15 +86,33 @@ async function main() {
     appliedFrom = fromDateInput.value;
     appliedTo = toDateInput.value;
 
-    const filtered = getAppliedRecords();
-    renderStats(filtered);
-    renderList(filtered);
+    // Stats use only the date filter — the Result dropdown should never
+    // shrink the Total (that made Clearance always read 100% whenever
+    // "Pass" was selected, since Total collapsed down to the Pass count).
+    // The visible history list below still correctly uses BOTH filters —
+    // narrowing the list by Result is legitimate, this only fixes the stats.
+    const dateFiltered = filterByDateWindow(allRecords, appliedFrom, appliedTo);
+    renderStats(dateFiltered);
+
+    const fullyFiltered = getAppliedRecords();
+    renderList(fullyFiltered);
   }
 
-  function renderStats(filtered) {
-    const total = filtered.length;
-    const passCount = filtered.filter((d) => d.result === "Pass").length;
-    const failCount = filtered.filter((d) => d.result === "Fail").length;
+  function renderStats(dateFiltered) {
+    const total = dateFiltered.length; // always the full date-range count, never narrowed by Result
+
+    let passCount, failCount;
+    if (appliedResultFilter === "Pass") {
+      passCount = dateFiltered.filter((d) => d.result === "Pass").length;
+      failCount = 0;
+    } else if (appliedResultFilter === "Fail") {
+      passCount = 0;
+      failCount = dateFiltered.filter((d) => d.result === "Fail").length;
+    } else {
+      passCount = dateFiltered.filter((d) => d.result === "Pass").length;
+      failCount = dateFiltered.filter((d) => d.result === "Fail").length;
+    }
+
     const clearance = total > 0 ? ((passCount / total) * 100).toFixed(1) : "—";
     statTotalEl.textContent = total;
     statPassEl.textContent = passCount;

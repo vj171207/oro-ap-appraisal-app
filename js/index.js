@@ -62,14 +62,23 @@ async function main() {
   }
 
   function applyFilters() {
-    let filtered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
+    const dateFiltered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
+    const total = dateFiltered.length; // always the full date-range count — never narrowed by the Result filter
+
     const resultFilter = resultFilterSelect.value;
-    if (resultFilter !== "all") {
-      filtered = filtered.filter((d) => d.result === resultFilter);
+    let passCount, failCount;
+
+    if (resultFilter === "Pass") {
+      passCount = dateFiltered.filter((d) => d.result === "Pass").length;
+      failCount = 0;
+    } else if (resultFilter === "Fail") {
+      passCount = 0;
+      failCount = dateFiltered.filter((d) => d.result === "Fail").length;
+    } else {
+      passCount = dateFiltered.filter((d) => d.result === "Pass").length;
+      failCount = dateFiltered.filter((d) => d.result === "Fail").length;
     }
-    const total = filtered.length;
-    const passCount = filtered.filter((d) => d.result === "Pass").length;
-    const failCount = filtered.filter((d) => d.result === "Fail").length;
+
     const clearance = total > 0 ? ((passCount / total) * 100).toFixed(1) : "—";
     statTotalEl.textContent = total;
     statPassEl.textContent = passCount;

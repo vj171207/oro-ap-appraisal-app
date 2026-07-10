@@ -22,81 +22,14 @@
 // Console-only, exactly as before. This function can only ever create
 // Auditor-role accounts.
 
-const PROJECT_ID = "oro-appraisalcalib";
-const ALLOWED_DOMAIN = "orocorp.in";
-
-function isAllowedEmail(email) {
-  return typeof email === "string" && email.toLowerCase().trim().endsWith(`@${ALLOWED_DOMAIN}`);
-}
-
-async function verifyCallerToken(idToken, apiKey) {
-  const res = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
-    }
-  );
-  const data = await res.json();
-  const email = data.users?.[0]?.email;
-  if (data.error || !email) return null;
-  return email;
-}
-
-async function isCallerManager(idToken, callerEmail) {
-  const res = await fetch(
-    `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/config/managers`,
-    { headers: { Authorization: `Bearer ${idToken}` } }
-  );
-  if (!res.ok) return false;
-  const data = await res.json();
-  const emails = (data.fields?.emails?.arrayValue?.values || []).map((v) => v.stringValue);
-  return emails.includes(callerEmail.toLowerCase());
-}
-
-async function getCurrentAuditors(idToken) {
-  const res = await fetch(
-    `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/config/auditors`,
-    { headers: { Authorization: `Bearer ${idToken}` } }
-  );
-  if (!res.ok) return [];
-  const data = await res.json();
-  const values = data.fields?.list?.arrayValue?.values || [];
-  return values.map((v) => ({
-    name: v.mapValue?.fields?.name?.stringValue || "",
-    empCode: v.mapValue?.fields?.empCode?.stringValue || "",
-  }));
-}
-
-async function writeAuditorsList(idToken, list) {
-  const payload = {
-    fields: {
-      list: {
-        arrayValue: {
-          values: list.map((a) => ({
-            mapValue: {
-              fields: {
-                name: { stringValue: a.name },
-                empCode: { stringValue: a.empCode },
-              },
-            },
-          })),
-        },
-      },
-    },
-  };
-
-  const res = await fetch(
-    `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/config/auditors?updateMask.fieldPaths=list`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
-      body: JSON.stringify(payload),
-    }
-  );
-  return res.ok;
-}
+import {
+  isAllowedEmail,
+  ALLOWED_DOMAIN,
+  verifyCallerToken,
+  isCallerManager,
+  getCurrentAuditors,
+  writeAuditorsList,
+} from "../lib/firebaseAdminHelpers.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -169,7 +102,7 @@ export default async function handler(req, res) {
 
     // 5. Add to config/auditors. If this fails, the login account still
     //    exists — say so clearly rather than leaving it ambiguous.
-    const newList = [...currentList, { name, empCode }];
+    const newList = [...currentList, { name, empCode, email: email.toLowerCase() }];
     const wroteAuditorEntry = await writeAuditorsList(callerIdToken, newList);
     if (!wroteAuditorEntry) {
       return res.status(500).json({

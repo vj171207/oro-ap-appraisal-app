@@ -1,5 +1,5 @@
 import { requireAuth, isManagerEmail } from "./authGuard.js";
-import { db, doc, getDoc, updateDoc, arrayUnion } from "./firebase-config.js";
+import { db, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "./firebase-config.js";
 
 /** Normalizes to Title Case regardless of input casing — "indore" / "INDORE" / "InDoRe" all become "Indore". Multi-word names are handled per-word ("new delhi" -> "New Delhi"). */
 function toTitleCase(str) {
@@ -70,9 +70,54 @@ async function main() {
         <div class="city-row" style="cursor: default;">
           <span class="name">${escapeHtml(a.name)}</span>
           <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);">${escapeHtml(a.empCode)}</span>
+          <button type="button" class="remove-entry-btn" data-name="${escapeHtml(a.name)}" data-empcode="${escapeHtml(a.empCode)}">Remove</button>
         </div>`
       )
       .join("");
+
+    auditorListEl.querySelectorAll(".remove-entry-btn").forEach((btn) => {
+      btn.addEventListener("click", () => removeAuditor(btn.dataset.name, btn.dataset.empcode));
+    });
+  }
+
+  async function removeAuditor(name, empCode) {
+    const confirmed = confirm(
+      `Remove "${name}" (${empCode})?\n\nThis removes them from the calibration form's dropdown AND disables their login entirely — they will no longer be able to sign in. This can't be undone from here.`
+    );
+    if (!confirmed) return;
+
+    clearAuditorMessages();
+    try {
+      const callerIdToken = await user.getIdToken();
+      const response = await fetch("/api/remove-auditor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, empCode, callerIdToken }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        auditorErrorEl.textContent = result.error || "Couldn't remove them. Please try again.";
+        auditorErrorEl.style.display = "block";
+        return;
+      }
+
+      if (result.warning) {
+        // Partial success — the list removal worked, but something about
+        // disabling the login didn't go as cleanly. Show it as a warning,
+        // not a success, so it doesn't look like everything went perfectly.
+        auditorErrorEl.textContent = result.warning;
+        auditorErrorEl.style.display = "block";
+      } else {
+        auditorSuccessEl.textContent = `"${name}" removed and their login disabled.`;
+        auditorSuccessEl.style.display = "block";
+      }
+      await loadAuditors();
+    } catch (err) {
+      console.error(err);
+      auditorErrorEl.textContent = "Couldn't remove them. Please try again.";
+      auditorErrorEl.style.display = "block";
+    }
   }
 
   function clearAuditorMessages() {
@@ -179,8 +224,34 @@ async function main() {
       return;
     }
     cityListEl.innerHTML = list
-      .map((c) => `<div class="city-row" style="cursor: default;"><span class="name">${escapeHtml(c)}</span></div>`)
+      .map(
+        (c) => `
+        <div class="city-row" style="cursor: default;">
+          <span class="name">${escapeHtml(c)}</span>
+          <button type="button" class="remove-entry-btn" data-city="${escapeHtml(c)}">Remove</button>
+        </div>`
+      )
       .join("");
+
+    cityListEl.querySelectorAll(".remove-entry-btn").forEach((btn) => {
+      btn.addEventListener("click", () => removeCity(btn.dataset.city));
+    });
+  }
+
+  async function removeCity(cityName) {
+    const confirmed = confirm(
+      `Remove "${cityName}" from the city list?\n\nThis only removes it from the picker — any calibration records already saved under this name are NOT deleted, and will reappear if you add this exact spelling back later.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await updateDoc(citiesDocRef, { list: arrayRemove(cityName) });
+      await loadCities();
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = `Couldn't remove "${cityName}". Please try again.`;
+      errorEl.style.display = "block";
+    }
   }
 
   function clearMessages() {

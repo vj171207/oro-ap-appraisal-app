@@ -188,6 +188,23 @@ footer.app-footer {
   font-weight: 600;
 }
 
+.remove-entry-btn {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fail-bright);
+  background: none;
+  border: 1px solid var(--fail);
+  border-radius: 100px;
+  padding: 4px 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.remove-entry-btn:hover {
+  background: var(--fail-soft);
+}
+
 .city-row .arrow {
   color: var(--accent);
   font-size: 18px;

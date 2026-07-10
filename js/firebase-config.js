@@ -14,6 +14,7 @@ import {
   getDoc,
   updateDoc,
   arrayUnion,
+  arrayRemove,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
@@ -54,6 +55,6 @@ const auth = getAuth(app);
 await setPersistence(auth, browserSessionPersistence);
 
 export {
-  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, updateDoc, arrayUnion, Timestamp,
+  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp,
   auth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut,
 };

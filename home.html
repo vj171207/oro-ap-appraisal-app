@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oro — Lending Services Audit</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .hub-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 24px;
+    }
+    .hub-card {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      text-decoration: none;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .hub-card:hover, .hub-card:focus-visible {
+      border-color: var(--accent);
+      background: var(--surface-raised);
+    }
+    .hub-card .hub-card-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .hub-card .hub-card-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .hub-card .hub-card-arrow {
+      color: var(--accent);
+      font-size: 18px;
+      float: right;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div id="user-bar" class="user-bar"></div>
+    <p class="eyebrow">Made for ORO.</p>
+    <h1>Lending Services Audit</h1>
+  </header>
+
+  <main>
+    <p class="section-label">Choose a workspace</p>
+    <div class="hub-grid">
+      <a href="index.html" class="hub-card">
+        <span class="hub-card-arrow">&rarr;</span>
+        <div class="hub-card-title">AP Appraisal Calibration</div>
+        <div class="hub-card-desc">Quarterly gold appraisal calibration testing, by city.</div>
+      </a>
+      <a href="interview.html" class="hub-card">
+        <span class="hub-card-arrow">&rarr;</span>
+        <div class="hub-card-title">AP Interview</div>
+        <div class="hub-card-desc">Appraisal Partner interview process.</div>
+      </a>
+    </div>
+  </main>
+
+  <script type="module" src="js/home.js"></script>
+</body>
+</html>

@@ -44,7 +44,7 @@ function getNextUrl() {
   if (next && next.startsWith("/") === false && !next.includes("://")) {
     return next;
   }
-  return "index.html";
+  return "home.html";
 }
 
 // If already signed in with a valid account, skip the form entirely —

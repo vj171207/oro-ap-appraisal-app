@@ -3,18 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AP Interview · Oro</title>
+  <title>City · AP Interview</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body class="index-page">
+<body class="city-page">
   <header class="app-header">
     <div id="user-bar" class="user-bar"></div>
-    <a href="home.html" class="back-link">&larr; Home</a>
+    <a href="interview.html" class="back-link">&larr; All cities</a>
     <p class="eyebrow">Made for ORO.</p>
-    <h1>AP Interview</h1>
+    <h1 id="city-title">City</h1>
   </header>
 
   <main>
+    <a id="new-interview-link" href="#" class="btn btn-primary" style="margin-bottom: 24px;">
+      + New Interview
+    </a>
+
+    <p class="section-label">Interview history</p>
+
     <div class="history-layout">
       <aside class="history-stats">
         <div class="stats-card">
@@ -57,15 +63,12 @@
         <button type="button" id="apply-filters-btn" class="btn btn-primary" style="margin-top: 12px;">Apply</button>
       </aside>
 
-      <div>
-        <p class="section-label">Select a city to continue</p>
-        <div class="city-list-compact" id="city-list"></div>
+      <div id="history-list">
+        <div class="empty-state">Loading…</div>
       </div>
     </div>
   </main>
 
-  <footer class="app-footer">AP Interview tracking</footer>
-
-  <script type="module" src="js/interview.js"></script>
+  <script type="module" src="js/interview-city.js"></script>
 </body>
 </html>

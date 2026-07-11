@@ -915,3 +915,40 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .section-label:first-child { margin-top: 0; }
+
+/* ---------- Compact city cards (AP Interview dashboards) ----------
+   Same structure as .city-list/.city-row (Calibration's city picker), just
+   smaller, so they can sit next to the sticky stats aside in a
+   .history-layout grid without the page feeling cramped. */
+
+.city-list-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.city-row-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.city-row-compact:hover, .city-row-compact:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface-raised);
+}
+
+.city-row-compact .name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.city-row-compact .arrow {
+  color: var(--accent);
+  font-size: 15px;
+}

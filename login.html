@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign in · Oro AP Appraisal Calibration</title>
+  <title>Sign in · Auditor Dashboard</title>
   <link rel="stylesheet" href="css/styles.css" />
   <style>
     .login-shell {
@@ -40,23 +40,20 @@
       color: var(--fail-bright);
       display: none;
     }
-    #login-notice {
-      margin-top: 4px;
-      margin-bottom: 12px;
-      font-size: 13px;
-      color: var(--pass-bright);
-      display: none;
-    }
-    .forgot-link {
-      display: block;
-      text-align: center;
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 14px;
-      cursor: pointer;
-    }
-    .forgot-link:hover {
-      color: var(--accent);
+
+    /* Browsers force their own autofill styling (typically a white/light
+       background with dark text) that overrides normal input CSS. This
+       forces autofilled fields to keep looking like every other input —
+       box-shadow is the standard trick since background-color alone gets
+       overridden by the browser's autofill styling precedence. */
+    .field input:-webkit-autofill,
+    .field input:-webkit-autofill:hover,
+    .field input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #E8E6E1;
+      -webkit-box-shadow: 0 0 0 1000px #12141A inset;
+      box-shadow: 0 0 0 1000px #12141A inset;
+      caret-color: #E8E6E1;
+      transition: background-color 5000s ease-in-out 0s; /* prevents a flash of the browser's own color before the override applies */
     }
   </style>
 </head>
@@ -64,7 +61,7 @@
   <div class="login-shell">
     <div class="login-card">
       <p class="eyebrow">Made for ORO.</p>
-      <h1>AP Appraisal Calibration</h1>
+      <h1>Auditor Dashboard</h1>
 
       <form id="login-form">
         <div class="field">
@@ -77,12 +74,9 @@
         </div>
 
         <p id="login-error"></p>
-        <p id="login-notice"></p>
 
         <button type="submit" id="login-submit-btn" class="btn btn-primary">Sign In</button>
       </form>
-
-      <span class="forgot-link" id="forgot-link">Forgot password?</span>
     </div>
   </div>
 

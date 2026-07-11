@@ -20,7 +20,6 @@ import {
 import {
   getAuth,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail,
   onAuthStateChanged,
   signOut,
   setPersistence,
@@ -56,5 +55,5 @@ await setPersistence(auth, browserSessionPersistence);
 
 export {
   db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp,
-  auth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut,
+  auth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
 };

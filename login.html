@@ -33,6 +33,12 @@
       margin: 0 0 28px;
       text-align: center;
     }
+    .login-fields-box {
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
     #login-error {
       margin-top: 4px;
       margin-bottom: 12px;
@@ -64,13 +70,15 @@
       <h1>Auditor Dashboard</h1>
 
       <form id="login-form">
-        <div class="field">
-          <label for="login-email">Email</label>
-          <input type="email" id="login-email" required autocomplete="username" placeholder="you@orocorp.in" />
-        </div>
-        <div class="field">
-          <label for="login-password">Password</label>
-          <input type="password" id="login-password" required autocomplete="current-password" />
+        <div class="login-fields-box">
+          <div class="field">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" required autocomplete="username" placeholder="you@orocorp.in" />
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" required autocomplete="current-password" />
+          </div>
         </div>
 
         <p id="login-error"></p>

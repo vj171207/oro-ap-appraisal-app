@@ -6,7 +6,7 @@
   <title>AP Interview · Oro</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
+<body class="index-page">
   <header class="app-header">
     <div id="user-bar" class="user-bar"></div>
     <a href="home.html" class="back-link">&larr; Home</a>
@@ -15,13 +15,11 @@
   </header>
 
   <main>
-    <div class="card">
-      <h2>Coming soon</h2>
-      <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
-        This section is being built out. Check back soon.
-      </p>
-    </div>
+    <p class="section-label">Select a city to continue</p>
+    <div class="city-list" id="city-list"></div>
   </main>
+
+  <footer class="app-footer">AP Interview tracking</footer>
 
   <script type="module" src="js/interview.js"></script>
 </body>

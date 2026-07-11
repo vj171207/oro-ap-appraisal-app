@@ -40,6 +40,16 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /interview_entries/{entryId} {
+      allow read: if isOroUser();
+      allow create: if isOroUser()
+                    && request.resource.data.keys().hasAll(['city','interviewDate','candidateName'])
+                    && request.resource.data.city is string
+                    && request.resource.data.candidateName is string
+                    && request.resource.data.candidateName.size() > 0;
+      allow update, delete: if false; // audit integrity, same as calibrations
+    }
+
     match /appraisal_partners/{empCode} {
       allow read: if isOroUser();
       allow write: if false; // writes only via the Apps Script service account (IAM), never from the app

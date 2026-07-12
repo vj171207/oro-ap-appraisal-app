@@ -142,17 +142,6 @@ function escapeHtml(str) {
  *
  * Emails in that document must be stored lowercase — this check lowercases
  * the input to match, but does not lowercase the stored list itself.
- */
-/**
- * Checks whether an email is in the Firestore-managed list of Managers
- * (config/managers, field "emails"). That document is only editable
- * directly in the Firebase Console (allow write: if false in the rules) —
- * intentionally not self-service, since it's rarely changed and the
- * consequence of getting it wrong (someone gaining Settings access) is
- * more sensitive than the city list itself.
- *
- * Emails in that document must be stored lowercase — this check lowercases
- * the input to match, but does not lowercase the stored list itself.
  *
  * Cached in sessionStorage for the duration of the browser tab session —
  * without this, every single page load (on every page, for every user)

@@ -3,31 +3,15 @@
 // is calibration-specific (needle columns, Pass/Fail result field, testDate
 // field name) — interview_entries has a different shape.
 
-export const QUICK_RANGE_OPTIONS = [
-  { value: "all", label: "All time" },
-  { value: "last3", label: "Last 3 months" },
-];
-
-/** Returns {from, to} as "YYYY-MM-DD" strings for a quick-range key, or {from:"", to:""} for "all" (unbounded). */
-export function getQuickRangeDates(rangeKey, now = new Date()) {
-  const toIso = (d) => d.toISOString().slice(0, 10);
-
-  if (rangeKey === "last3") {
-    const start = new Date(now);
-    start.setMonth(start.getMonth() - 3);
-    return { from: toIso(start), to: toIso(now) };
-  }
-  return { from: "", to: "" };
-}
+// QUICK_RANGE_OPTIONS/getQuickRangeDates are pure date math shared with AP
+// Calibration's exportExcel.js — both re-export the same implementation
+// from dateRangeUtils.js rather than each defining their own copy.
+export { QUICK_RANGE_OPTIONS, getQuickRangeDates } from "./dateRangeUtils.js";
+import { filterByDateField } from "./dateRangeUtils.js";
 
 /** Filters records whose interviewDate falls within [fromStr, toStr] (inclusive). Empty string on either side means unbounded on that side. */
 export function filterByDateWindow(records, fromStr, toStr) {
-  return records.filter((r) => {
-    if (!r.interviewDate) return false;
-    if (fromStr && r.interviewDate < fromStr) return false;
-    if (toStr && r.interviewDate > toStr) return false;
-    return true;
-  });
+  return filterByDateField(records, "interviewDate", fromStr, toStr);
 }
 
 /**

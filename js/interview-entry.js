@@ -41,6 +41,10 @@ async function main() {
   const localLanguage = LOCAL_LANGUAGE_BY_CITY[city] || "Local Language";
   document.getElementById("localLanguageLabel").textContent = `${localLanguage} Proficiency`;
 
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  document.getElementById("interviewDate").value = todayIso; // pre-filled, but a normal <input type="date"> — freely editable
+
   const form = document.getElementById("interview-form");
 
   form.addEventListener("submit", async (e) => {

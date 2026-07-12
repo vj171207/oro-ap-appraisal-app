@@ -29,30 +29,14 @@ async function main() {
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
 
-  function populateDateDropdowns() {
-    const daySelect = document.getElementById("testDay");
-    const monthSelect = document.getElementById("testMonth");
-    const yearSelect = document.getElementById("testYear");
-
-    daySelect.innerHTML =
-      `<option value="" disabled selected>Day</option>` +
-      Array.from({ length: 31 }, (_, i) => i + 1)
-        .map((d) => `<option value="${d}">${String(d).padStart(2, "0")}</option>`)
-        .join("");
-
-    monthSelect.innerHTML =
-      `<option value="" disabled selected>Month</option>` +
-      MONTHS.map((m, i) => `<option value="${i + 1}">${m}</option>`).join("");
-
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let y = currentYear - 3; y <= currentYear + 1; y++) years.push(y);
-    yearSelect.innerHTML =
-      `<option value="" disabled selected>Year</option>` +
-      years.map((y) => `<option value="${y}">${y}</option>`).join("");
+  function setDefaultTestDate() {
+    const testDateInput = document.getElementById("testDate");
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    testDateInput.value = iso; // pre-filled, but a normal <input type="date"> — freely editable
   }
 
-  populateDateDropdowns();
+  setDefaultTestDate();
 
   // ---- Auditor dropdown (config/auditors, managed via Settings) ----
 
@@ -280,9 +264,7 @@ async function main() {
     const missing = [];
 
     if (ENFORCE_ALL_FIELDS_REQUIRED) {
-      if (!document.getElementById("testDay").value) missing.push("Test Date (Day)");
-      if (!document.getElementById("testMonth").value) missing.push("Test Date (Month)");
-      if (!document.getElementById("testYear").value) missing.push("Test Date (Year)");
+      if (!document.getElementById("testDate").value) missing.push("Test Date");
       if (!document.getElementById("auditorName").value.trim()) missing.push("Audit Official Name");
       if (!document.getElementById("auditorEmpCode").value.trim()) missing.push("Auditor Emp Code");
       if (!document.getElementById("apEmpCode").value.trim()) missing.push("AP Employee Code");
@@ -317,11 +299,8 @@ async function main() {
 
     const { totalScore, autoFailTriggered, result } = computeResult(needleData);
 
-    const day = document.getElementById("testDay").value;
-    const month = document.getElementById("testMonth").value;
-    const year = document.getElementById("testYear").value;
-
-    const testDate = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const testDate = document.getElementById("testDate").value; // already "YYYY-MM-DD"
+    const [year, month] = testDate.split("-");
     const monthYearLabel = `${MONTHS[Number(month) - 1]} ${year}`;
 
     const submitBtn = form.querySelector("button[type=submit]");

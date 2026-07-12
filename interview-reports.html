@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All-Cities Report · Oro AP Interview</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div id="user-bar" class="user-bar"></div>
+    <a href="interview.html" class="back-link">&larr; All cities</a>
+    <p class="eyebrow">Made for ORO.</p>
+    <h1>All-Cities Report</h1>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>Download a combined report</h2>
+      <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+        Generates one Excel file with a Summary sheet (selection rate per
+        city), an "Overall" sheet covering every city, plus a separate sheet
+        per city.
+      </p>
+
+      <div class="field">
+        <label for="quick-range-select">Quick range</label>
+        <select id="quick-range-select"></select>
+      </div>
+
+      <div class="filter-row">
+        <div class="field" style="margin-bottom: 0;">
+          <label for="from-date-input">From</label>
+          <input type="date" id="from-date-input" />
+        </div>
+        <div class="field" style="margin-bottom: 0;">
+          <label for="to-date-input">To</label>
+          <input type="date" id="to-date-input" />
+        </div>
+      </div>
+
+      <div id="summary-line" style="font-size: 13px; color: var(--text-muted); margin: 10px 0 16px;"></div>
+
+      <button type="button" id="export-btn" class="btn btn-primary">⬇ Download Report</button>
+    </div>
+  </main>
+
+  <script type="module" src="js/interview-reports.js"></script>
+</body>
+</html>

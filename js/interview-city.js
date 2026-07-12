@@ -1,6 +1,7 @@
 import { requireAuth } from "./authGuard.js";
 import { db, collection, getDocs, query, where, orderBy } from "./firebase-config.js";
 import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, computeDecisionStats, classifyDecision } from "./interviewStats.js";
+import { downloadSingleSheetInterviewWorkbook } from "./exportInterviewExcel.js";
 
 async function main() {
   await requireAuth();
@@ -26,8 +27,10 @@ async function main() {
   const fromDateInput = document.getElementById("from-date-input");
   const toDateInput = document.getElementById("to-date-input");
   const applyBtn = document.getElementById("apply-filters-btn");
+  const exportBtn = document.getElementById("export-btn");
 
   let allRecords = [];
+  let visibleRecords = [];
   let appliedFrom = "";
   let appliedTo = "";
 
@@ -65,6 +68,7 @@ async function main() {
     appliedTo = toDateInput.value;
 
     const dateFiltered = filterByDateWindow(allRecords, appliedFrom, appliedTo);
+    visibleRecords = dateFiltered;
     renderStats(dateFiltered);
     renderList(dateFiltered);
   }
@@ -137,6 +141,38 @@ async function main() {
   }
 
   applyBtn.addEventListener("click", applyFilters);
+
+  exportBtn.addEventListener("click", async () => {
+    if (visibleRecords.length === 0) {
+      alert("No records match the current filters — nothing to export.");
+      return;
+    }
+
+    const rangeLabel = describeRange(appliedFrom, appliedTo);
+    const rangeSlug = (appliedFrom || "start") + "_to_" + (appliedTo || "now");
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    const filename = `Oro_${city}_Interview_${rangeSlug}_${dateStamp}.xlsx`;
+
+    exportBtn.disabled = true;
+    exportBtn.textContent = "Generating…";
+    try {
+      await downloadSingleSheetInterviewWorkbook(visibleRecords, city, filename, rangeLabel);
+    } catch (err) {
+      console.error(err);
+      alert("Couldn't generate the Excel file. Please try again.");
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.textContent = "⬇ Export to Excel";
+    }
+  });
+
+  /** Human-readable description of a From/To window, for the report's subtitle. */
+  function describeRange(from, to) {
+    if (!from && !to) return "All time";
+    if (from && to) return `${from} to ${to}`;
+    if (from) return `From ${from}`;
+    return `Up to ${to}`;
+  }
 
   function buildDetailHtml(d) {
     return `

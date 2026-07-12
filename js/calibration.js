@@ -3,6 +3,12 @@ import { showErrorToast } from "./toast.js";
 import { KARAT_OPTIONS, scoreNeedle, computeResult } from "./scoring.js";
 import { db, collection, addDoc, serverTimestamp, doc, getDoc } from "./firebase-config.js";
 
+// Flip to false to stop requiring every field on this form (except
+// Remarks, which stays optional either way). Needle Known Value/AP Answer
+// are unaffected by this toggle — those are checked unconditionally,
+// separately, since the score literally can't be computed without them.
+const ENFORCE_ALL_FIELDS_REQUIRED = true;
+
 async function main() {
   await requireAuth();
 
@@ -260,18 +266,53 @@ async function main() {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    // ---- Mandatory-field validation ----------------------------------
+    // Set ENFORCE_ALL_FIELDS_REQUIRED to false (or delete this block down
+    // to the closing "// --------" marker) to remove this requirement
+    // entirely — the form will then submit with any of these fields left
+    // blank, same as before this was added.
+    //
+    // Needle given/answer are checked separately below, UNCONDITIONALLY —
+    // those aren't part of the "make every field mandatory" request, they
+    // were already required because scoreNeedle()/computeResult() can't
+    // run without them. Remarks stays optional either way — it's freeform
+    // notes, not a data field.
+    const missing = [];
+
+    if (ENFORCE_ALL_FIELDS_REQUIRED) {
+      if (!document.getElementById("testDay").value) missing.push("Test Date (Day)");
+      if (!document.getElementById("testMonth").value) missing.push("Test Date (Month)");
+      if (!document.getElementById("testYear").value) missing.push("Test Date (Year)");
+      if (!document.getElementById("auditorName").value.trim()) missing.push("Audit Official Name");
+      if (!document.getElementById("auditorEmpCode").value.trim()) missing.push("Auditor Emp Code");
+      if (!document.getElementById("apEmpCode").value.trim()) missing.push("AP Employee Code");
+      if (!document.getElementById("apName").value.trim()) missing.push("AP Name");
+      if (!document.getElementById("apDoj").value) missing.push("Date of Joining");
+    }
+    // --------------------------------------------------------------------
+
     const needleCards = [...container.querySelectorAll(".needle-card")];
     const needleData = [];
+    let needleGapFound = false;
 
     for (const card of needleCards) {
       const given = card.querySelector(".given-select").value;
       const answer = card.querySelector(".answer-select").value;
       if (!given || !answer) {
-        alert("Please fill in every needle's known value and AP answer before submitting.");
-        return;
+        needleGapFound = true;
+        continue;
       }
       const { score, autoFail } = scoreNeedle(given, answer);
       needleData.push({ given, answer, score, autoFail });
+    }
+
+    if (needleGapFound) {
+      missing.push("every needle's Known Value and AP Answer");
+    }
+
+    if (missing.length > 0) {
+      showErrorToast(`Please fill in: ${missing.join(", ")}.`);
+      return;
     }
 
     const { totalScore, autoFailTriggered, result } = computeResult(needleData);
@@ -279,11 +320,6 @@ async function main() {
     const day = document.getElementById("testDay").value;
     const month = document.getElementById("testMonth").value;
     const year = document.getElementById("testYear").value;
-
-    if (!day || !month || !year) {
-      alert("Please select the full test date (day, month, and year).");
-      return;
-    }
 
     const testDate = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const monthYearLabel = `${MONTHS[Number(month) - 1]} ${year}`;
@@ -313,7 +349,7 @@ async function main() {
       showResult(totalScore, result, autoFailTriggered);
     } catch (err) {
       console.error(err);
-      alert("Couldn't save this calibration. Check your connection and try again.");
+      showErrorToast("Couldn't save this calibration. Check your connection and try again.");
       submitBtn.disabled = false;
       submitBtn.textContent = "Submit calibration";
     }

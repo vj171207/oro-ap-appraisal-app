@@ -1,5 +1,13 @@
 import { requireAuth } from "./authGuard.js";
+import { showErrorToast } from "./toast.js";
 import { db, collection, addDoc, serverTimestamp } from "./firebase-config.js";
+
+// Flip to false to stop requiring every field on this form. Remarks and
+// Location (optional detail) stay exempt either way — Remarks is freeform
+// notes, and Location is only meaningful when the candidate's actual
+// location differs from the city itself (the form leaves it blank
+// on purpose when it doesn't).
+const ENFORCE_ALL_FIELDS_REQUIRED = true;
 
 // City -> local language shown on the form, mirroring the per-city language
 // column already used in the source spreadsheet (Kannada tab for Bengaluru,
@@ -39,20 +47,51 @@ async function main() {
     e.preventDefault();
 
     const candidateName = document.getElementById("candidateName").value.trim();
-    if (!candidateName) {
-      alert("Please enter the candidate's name.");
-      return;
-    }
-
     const interviewDate = document.getElementById("interviewDate").value;
-    if (!interviewDate) {
-      alert("Please select the interview date.");
-      return;
-    }
-
+    const company = document.getElementById("company").value.trim();
+    const role = document.getElementById("role").value.trim();
+    const age = document.getElementById("age").value;
+    const experience = document.getElementById("experience").value.trim();
+    const bikeAvailable = document.getElementById("bikeAvailable").value;
+    const dlAvailable = document.getElementById("dlAvailable").value;
     const scoreTheoryRaw = document.getElementById("scoreTheory").value;
     const scorePracticalRaw = document.getElementById("scorePractical").value;
     const totalScoreRaw = document.getElementById("totalScore").value;
+    const localLanguageProficiency = document.getElementById("localLanguageProficiency").value;
+    const englishProficiency = document.getElementById("englishProficiency").value;
+    const round1Decision = document.getElementById("round1Decision").value.trim();
+    const interviewer = document.getElementById("interviewer").value.trim();
+
+    // ---- Mandatory-field validation ----------------------------------
+    // Set ENFORCE_ALL_FIELDS_REQUIRED to false (or delete this block down
+    // to the closing "// --------" marker) to remove this requirement
+    // entirely — the form will then submit with any of these fields left
+    // blank, same as before this was added. Remarks and Location (optional
+    // detail) are never included here, regardless of the toggle.
+    if (ENFORCE_ALL_FIELDS_REQUIRED) {
+      const missing = [];
+      if (!candidateName) missing.push("Candidate Name");
+      if (!interviewDate) missing.push("Date");
+      if (!company) missing.push("Company / Previous Employer(s)");
+      if (!role) missing.push("Role");
+      if (!age) missing.push("Age");
+      if (!experience) missing.push("Total Relevant Experience");
+      if (!bikeAvailable) missing.push("Bike Available");
+      if (!dlAvailable) missing.push("DL/LLR Available");
+      if (!scoreTheoryRaw) missing.push("Theory Score");
+      if (!scorePracticalRaw) missing.push("Practical Score");
+      if (!totalScoreRaw) missing.push("Total Score");
+      if (!localLanguageProficiency) missing.push(`${localLanguage} Proficiency`);
+      if (!englishProficiency) missing.push("English Proficiency");
+      if (!round1Decision) missing.push("Round 1 Decision");
+      if (!interviewer) missing.push("Round 1 Interviewer");
+
+      if (missing.length > 0) {
+        showErrorToast(`Please fill in: ${missing.join(", ")}.`);
+        return;
+      }
+    }
+    // --------------------------------------------------------------------
 
     const submitBtn = form.querySelector("button[type=submit]");
     submitBtn.disabled = true;
@@ -64,20 +103,20 @@ async function main() {
         interviewDate,
         candidateName,
         locationDetail: document.getElementById("locationDetail").value.trim(),
-        company: document.getElementById("company").value.trim(),
-        role: document.getElementById("role").value.trim(),
-        age: document.getElementById("age").value ? Number(document.getElementById("age").value) : null,
-        experience: document.getElementById("experience").value.trim(),
-        bikeAvailable: document.getElementById("bikeAvailable").value || null,
-        dlAvailable: document.getElementById("dlAvailable").value || null,
+        company,
+        role,
+        age: age ? Number(age) : null,
+        experience,
+        bikeAvailable: bikeAvailable || null,
+        dlAvailable: dlAvailable || null,
         scoreTheory: scoreTheoryRaw === "" ? null : Number(scoreTheoryRaw),
         scorePractical: scorePracticalRaw === "" ? null : Number(scorePracticalRaw),
         totalScore: totalScoreRaw === "" ? null : Number(totalScoreRaw),
         localLanguage,
-        localLanguageProficiency: document.getElementById("localLanguageProficiency").value || null,
-        englishProficiency: document.getElementById("englishProficiency").value || null,
-        round1Decision: document.getElementById("round1Decision").value.trim(),
-        interviewer: document.getElementById("interviewer").value.trim(),
+        localLanguageProficiency: localLanguageProficiency || null,
+        englishProficiency: englishProficiency || null,
+        round1Decision,
+        interviewer,
         remarks: document.getElementById("remarks").value.trim(),
         createdAt: serverTimestamp(),
       });
@@ -85,7 +124,7 @@ async function main() {
       showSaved(candidateName, city);
     } catch (err) {
       console.error(err);
-      alert("Couldn't save this interview entry. Check your connection and try again.");
+      showErrorToast("Couldn't save this interview entry. Check your connection and try again.");
       submitBtn.disabled = false;
       submitBtn.textContent = "Save interview entry";
     }

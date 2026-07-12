@@ -2,6 +2,7 @@ import { requireAuth } from "./authGuard.js";
 import { db, collection, getDocs, query, where, orderBy } from "./firebase-config.js";
 import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, computeDecisionStats, classifyDecision } from "./interviewStats.js";
 import { downloadSingleSheetInterviewWorkbook } from "./exportInterviewExcel.js";
+import { createReconcileState, reconcileList } from "./domReconcile.js";
 
 async function main() {
   await requireAuth();
@@ -31,6 +32,7 @@ async function main() {
 
   let allRecords = [];
   let visibleRecords = [];
+  const historyReconcileState = createReconcileState();
   let appliedFrom = "";
   let appliedTo = "";
 
@@ -54,7 +56,7 @@ async function main() {
       const snapshot = await getDocs(q);
 
       allRecords = [];
-      snapshot.forEach((docSnap) => allRecords.push(docSnap.data()));
+      snapshot.forEach((docSnap) => allRecords.push({ ...docSnap.data(), _docId: docSnap.id }));
 
       applyFilters();
     } catch (err) {
@@ -84,60 +86,62 @@ async function main() {
   function renderList(visible) {
     if (allRecords.length === 0) {
       historyEl.innerHTML = `<div class="empty-state">No interview entries recorded for ${city} yet. Start one above.</div>`;
+      historyReconcileState.nodesByKey.clear();
+      historyReconcileState.initialized = false;
       return;
     }
 
-    if (visible.length === 0) {
-      historyEl.innerHTML = `<div class="empty-state">No results match the current filters.</div>`;
-      return;
-    }
-
-    historyEl.innerHTML = "";
-
-    visible.forEach((d) => {
-      const outcome = classifyDecision(d.round1Decision);
-      const isSelected = outcome === "Selected";
-      const isRejected = outcome === "Rejected";
-      const item = document.createElement("div");
-      item.className = "history-item-expandable";
-
-      const dateLabel = formatDateShort(d.interviewDate) || "—";
-      const iconClass = isSelected ? "pass" : isRejected ? "fail" : "";
-      const icon = isSelected ? "✓" : isRejected ? "✗" : "•";
-
-      item.innerHTML = `
-        <button type="button" class="history-summary">
-          <span class="ap-info">
-            <span class="name">${escapeHtml(d.candidateName || "—")}</span>
-          </span>
-          <span class="history-date">${dateLabel}</span>
-          <span class="result-icon ${iconClass}">${icon}</span>
-          <span class="chevron">&rsaquo;</span>
-        </button>
-        <div class="history-detail" hidden></div>
-      `;
-
-      const detailEl = item.querySelector(".history-detail");
-      const summaryBtn = item.querySelector(".history-summary");
-      let rendered = false;
-
-      summaryBtn.addEventListener("click", () => {
-        const isHidden = detailEl.hasAttribute("hidden");
-        if (isHidden) {
-          if (!rendered) {
-            detailEl.innerHTML = buildDetailHtml(d);
-            rendered = true;
-          }
-          detailEl.removeAttribute("hidden");
-          item.classList.add("expanded");
-        } else {
-          detailEl.setAttribute("hidden", "");
-          item.classList.remove("expanded");
-        }
-      });
-
-      historyEl.appendChild(item);
+    reconcileList(historyEl, visible, historyReconcileState, {
+      getKey: (d) => d._docId,
+      buildRow: buildHistoryRow,
+      emptyMessageHtml: `<div class="empty-state">No results match the current filters.</div>`,
     });
+  }
+
+  /** Builds one collapsed history row with its expand/collapse behavior wired up. Called once per record ever (see domReconcile.js) — not on every filter change. */
+  function buildHistoryRow(d) {
+    const outcome = classifyDecision(d.round1Decision);
+    const isSelected = outcome === "Selected";
+    const isRejected = outcome === "Rejected";
+    const item = document.createElement("div");
+    item.className = "history-item-expandable";
+
+    const dateLabel = formatDateShort(d.interviewDate) || "—";
+    const iconClass = isSelected ? "pass" : isRejected ? "fail" : "";
+    const icon = isSelected ? "✓" : isRejected ? "✗" : "•";
+
+    item.innerHTML = `
+      <button type="button" class="history-summary">
+        <span class="ap-info">
+          <span class="name">${escapeHtml(d.candidateName || "—")}</span>
+        </span>
+        <span class="history-date">${dateLabel}</span>
+        <span class="result-icon ${iconClass}">${icon}</span>
+        <span class="chevron">&rsaquo;</span>
+      </button>
+      <div class="history-detail" hidden></div>
+    `;
+
+    const detailEl = item.querySelector(".history-detail");
+    const summaryBtn = item.querySelector(".history-summary");
+    let rendered = false;
+
+    summaryBtn.addEventListener("click", () => {
+      const isHidden = detailEl.hasAttribute("hidden");
+      if (isHidden) {
+        if (!rendered) {
+          detailEl.innerHTML = buildDetailHtml(d);
+          rendered = true;
+        }
+        detailEl.removeAttribute("hidden");
+        item.classList.add("expanded");
+      } else {
+        detailEl.setAttribute("hidden", "");
+        item.classList.remove("expanded");
+      }
+    });
+
+    return item;
   }
 
   applyBtn.addEventListener("click", applyFilters);

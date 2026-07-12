@@ -145,7 +145,7 @@ async function main() {
         <div><span class="detail-label">Role</span>${escapeHtml(d.role || "—")}</div>
         <div><span class="detail-label">Age</span>${d.age ?? "—"}</div>
         <div><span class="detail-label">Experience</span>${escapeHtml(d.experience || "—")}</div>
-        <div><span class="detail-label">Bike / DL</span>${escapeHtml(d.bikeAvailable || "—")} / ${escapeHtml(d.dlAvailable || "—")}</div>
+        <div><span class="detail-label">Bike / DL-LLR</span>${escapeHtml(d.bikeAvailable || "—")} / ${escapeHtml(d.dlAvailable || "—")}</div>
         <div><span class="detail-label">Theory / Practical</span>${d.scoreTheory ?? "—"} / ${d.scorePractical ?? "—"}</div>
         <div><span class="detail-label">Total Score</span>${d.totalScore ?? "—"}</div>
         <div><span class="detail-label">${escapeHtml(d.localLanguage || "Local Language")} Proficiency</span>${escapeHtml(d.localLanguageProficiency || "—")}</div>

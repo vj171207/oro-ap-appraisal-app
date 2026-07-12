@@ -6,7 +6,11 @@
    — separates "measured data" from "labels" at a glance.
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap');
+/* Font import moved to a <link rel="stylesheet"> in each page's <head> —
+   @import inside CSS forces the browser to fully fetch+parse this file
+   first before it even discovers it needs a second stylesheet, serializing
+   what could otherwise be two parallel fetches. See any .html file's <head>
+   for the replacement. */
 
 :root {
   --bg: #050505;

@@ -31,7 +31,15 @@ function getNextUrl() {
   const next = params.get("next");
   // Only ever redirect to a same-site relative path — never trust an
   // absolute/external URL from a query param.
-  if (next && next.startsWith("/") === false && !next.includes("://")) {
+  //
+  // `next` is always built by authGuard.js from window.location.pathname,
+  // which always starts with a single "/" — so a legitimate same-site
+  // value looks like "/interview-entry.html?city=Chennai". The check below
+  // requires exactly that shape: starts with "/" (a site-relative path),
+  // but not "//" (protocol-relative, e.g. "//evil.com" — a classic
+  // open-redirect trick browsers treat as "same protocol, different
+  // host"), and contains no "://" (rules out "https://evil.com" too).
+  if (next && next.startsWith("/") && !next.startsWith("//") && !next.includes("://")) {
     return next;
   }
   return "home.html";

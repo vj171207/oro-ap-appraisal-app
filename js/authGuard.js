@@ -63,18 +63,29 @@ export function requireAuth() {
   });
 }
 
+// Explicit allowlists rather than a fallback default — home.html and
+// login.html belong to neither app, and should show no Settings link at
+// all rather than silently defaulting to one app's settings (which is what
+// happened before this list existed: home.html incorrectly linked to
+// AP Calibration's settings, letting anyone reach it from a page that
+// isn't part of either app).
+const CALIBRATION_PAGES = ["index.html", "city.html", "calibration.html", "reports.html", "settings-calibration.html"];
+const INTERVIEW_PAGES = ["interview.html", "interview-city.html", "interview-entry.html", "interview-reports.html", "settings-interview.html"];
+
+function currentSettingsPage() {
+  const currentFile = window.location.pathname.split("/").pop();
+  if (CALIBRATION_PAGES.includes(currentFile)) return "settings-calibration.html";
+  if (INTERVIEW_PAGES.includes(currentFile)) return "settings-interview.html";
+  return null; // home.html, login.html, or anything else outside either app
+}
+
 async function renderUserBar(user) {
   const bar = document.getElementById("user-bar");
   if (!bar) return;
 
   const managerStatus = await isManagerEmail(user.email);
-  // Two separate settings pages now (AP Calibration vs AP Interview only
-  // share "Add a city" — everything else, like auditor management, is
-  // calibration-specific). Route based on which app the current page
-  // belongs to, since every page shares this same renderUserBar call.
-  const isInterviewPage = window.location.pathname.includes("interview");
-  const settingsPage = isInterviewPage ? "settings-interview.html" : "settings-calibration.html";
-  const settingsLinkHtml = managerStatus
+  const settingsPage = currentSettingsPage();
+  const settingsLinkHtml = managerStatus && settingsPage
     ? `<a href="${settingsPage}" class="user-bar-pill">⚙ Settings</a>`
     : "";
 

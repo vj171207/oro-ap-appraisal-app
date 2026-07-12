@@ -12,7 +12,7 @@ async function main() {
   cities.forEach((city) => {
     const row = document.createElement("a");
     row.href = `interview-city.html?city=${encodeURIComponent(city)}`;
-    row.className = "city-row-compact";
+    row.className = "city-row";
     row.innerHTML = `
       <span class="name">${city}</span>
       <span class="arrow">&rarr;</span>

@@ -63,17 +63,18 @@ export function requireAuth() {
   });
 }
 
-// Explicit allowlists rather than a fallback default — home.html and
-// login.html belong to neither app, and should show no Settings link at
-// all rather than silently defaulting to one app's settings (which is what
-// happened before this list existed: home.html incorrectly linked to
-// AP Calibration's settings, letting anyone reach it from a page that
-// isn't part of either app).
-const CALIBRATION_PAGES = ["index.html", "city.html", "calibration.html", "reports.html", "settings-calibration.html"];
-const INTERVIEW_PAGES = ["interview.html", "interview-city.html", "interview-entry.html", "interview-reports.html", "settings-interview.html"];
+// Bare names, without ".html" — vercel.json has "cleanUrls": true, which
+// strips the extension from the actual browser address bar (so
+// window.location.pathname for index.html is really "/index", not
+// "/index.html"). Comparing against the bare name handles that; it also
+// still works correctly if cleanUrls is ever turned off, since the ".html"
+// suffix gets stripped from the pathname below either way.
+const CALIBRATION_PAGES = ["", "index", "city", "calibration", "reports", "settings-calibration"];
+const INTERVIEW_PAGES = ["interview", "interview-city", "interview-entry", "interview-reports", "settings-interview"];
 
 function currentSettingsPage() {
-  const currentFile = window.location.pathname.split("/").pop();
+  const lastSegment = window.location.pathname.split("/").pop();
+  const currentFile = lastSegment.replace(/\.html$/, "");
   if (CALIBRATION_PAGES.includes(currentFile)) return "settings-calibration.html";
   if (INTERVIEW_PAGES.includes(currentFile)) return "settings-interview.html";
   return null; // home.html, login.html, or anything else outside either app

@@ -68,8 +68,14 @@ async function renderUserBar(user) {
   if (!bar) return;
 
   const managerStatus = await isManagerEmail(user.email);
+  // Two separate settings pages now (AP Calibration vs AP Interview only
+  // share "Add a city" — everything else, like auditor management, is
+  // calibration-specific). Route based on which app the current page
+  // belongs to, since every page shares this same renderUserBar call.
+  const isInterviewPage = window.location.pathname.includes("interview");
+  const settingsPage = isInterviewPage ? "settings-interview.html" : "settings-calibration.html";
   const settingsLinkHtml = managerStatus
-    ? `<a href="settings.html" class="user-bar-pill">⚙ Settings</a>`
+    ? `<a href="${settingsPage}" class="user-bar-pill">⚙ Settings</a>`
     : "";
 
   bar.innerHTML = `

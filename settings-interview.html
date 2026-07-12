@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings · AP Interview · Oro</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div id="user-bar" class="user-bar"></div>
+    <a href="interview.html" class="back-link">&larr; All cities</a>
+    <p class="eyebrow">Made for ORO.</p>
+    <h1>AP Interview Settings</h1>
+  </header>
+
+  <main>
+    <div id="access-denied" class="card" style="display: none;">
+      <h2>Access restricted</h2>
+      <p style="font-size: 14px; color: var(--text-muted);">
+        Settings is only available to Managers. If you believe this is a mistake, contact your admin.
+      </p>
+    </div>
+
+    <div id="settings-content" style="display: none;">
+      <div class="card">
+        <h2>Add a city</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
+          Shared with AP Calibration — adding a city here makes it available
+          in both apps. Spellings must exactly match.
+        </p>
+        <div class="field">
+          <label for="new-city-input">City name</label>
+          <input type="text" id="new-city-input" placeholder="e.g. Coimbatore" />
+        </div>
+        <p id="add-city-error" style="font-size: 13px; color: var(--fail-bright); display: none; margin-bottom: 10px;"></p>
+        <p id="add-city-success" style="font-size: 13px; color: var(--pass-bright); display: none; margin-bottom: 10px;"></p>
+        <button type="button" id="add-city-btn" class="btn btn-primary">Add City</button>
+      </div>
+
+      <button type="button" id="toggle-cities-btn" class="toggle-list-btn">▸ Show current cities</button>
+      <div id="city-list-display" class="city-list" style="display: none; margin-top: 8px;"></div>
+    </div>
+  </main>
+
+  <script type="module" src="js/settings-interview.js"></script>
+</body>
+</html>

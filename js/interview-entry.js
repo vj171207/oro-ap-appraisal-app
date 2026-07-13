@@ -6,11 +6,8 @@ import { karatStripHtml, optionsHtml } from "./needleUI.js";
 import { loadAuditorList } from "./auditorList.js";
 import { loadCityLanguageMap, resolveLanguageForCity } from "./cityLanguages.js";
 
-// Flip to false to stop requiring every field on this form. Remarks and
-// Location (optional detail) stay exempt either way — Remarks is freeform
-// notes, and Location is only meaningful when the candidate's actual
-// location differs from the city itself (the form leaves it blank
-// on purpose when it doesn't).
+// Flip to false to stop requiring every field on this form. Remarks stays
+// exempt either way — it's freeform notes, not a data field.
 const ENFORCE_ALL_FIELDS_REQUIRED = true;
 
 async function main() {
@@ -226,6 +223,7 @@ async function main() {
 
     const candidateName = document.getElementById("candidateName").value.trim();
     const interviewDate = document.getElementById("interviewDate").value;
+    const locationDetail = document.getElementById("locationDetail").value.trim();
     const company = document.getElementById("company").value.trim();
     const role = document.getElementById("role").value.trim();
     const age = document.getElementById("age").value;
@@ -244,12 +242,13 @@ async function main() {
     // Set ENFORCE_ALL_FIELDS_REQUIRED to false (or delete this block down
     // to the closing "// --------" marker) to remove this requirement
     // entirely — the form will then submit with any of these fields left
-    // blank, same as before this was added. Remarks and Location (optional
-    // detail) are never included here, regardless of the toggle.
+    // blank, same as before this was added. Remarks is never included
+    // here, regardless of the toggle.
     if (ENFORCE_ALL_FIELDS_REQUIRED) {
       const missing = [];
       if (!candidateName) missing.push("Candidate Name");
       if (!interviewDate) missing.push("Date");
+      if (!locationDetail) missing.push("Location");
       if (!company) missing.push("Company / Previous Employer(s)");
       if (!role) missing.push("Role");
       if (!age) missing.push("Age");
@@ -280,7 +279,7 @@ async function main() {
         city,
         interviewDate,
         candidateName,
-        locationDetail: document.getElementById("locationDetail").value.trim(),
+        locationDetail,
         company,
         role,
         age: age ? Number(age) : null,

@@ -1,7 +1,7 @@
 import { requireAuth } from "./authGuard.js";
 import { getCities } from "./cities.js";
 import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
-import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, computeDecisionStats } from "./interviewStats.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, classifyDecision } from "./interviewStats.js";
 
 async function main() {
   await requireAuth();
@@ -26,6 +26,7 @@ async function main() {
   const statSelectedEl = document.getElementById("stat-selected");
   const statRejectedEl = document.getElementById("stat-rejected");
   const statRateEl = document.getElementById("stat-rate");
+  const decisionFilterSelect = document.getElementById("decision-filter-select");
   const quickRangeSelect = document.getElementById("quick-range-select");
   const fromDateInput = document.getElementById("from-date-input");
   const toDateInput = document.getElementById("to-date-input");
@@ -62,11 +63,26 @@ async function main() {
 
   function applyFilters() {
     const dateFiltered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
-    const { total, selected, rejected, selectionRate } = computeDecisionStats(dateFiltered);
+    const total = dateFiltered.length; // always the full date-range count — never narrowed by the Decision filter
 
+    const decisionFilter = decisionFilterSelect.value;
+    let selectedCount, rejectedCount;
+
+    if (decisionFilter === "Selected") {
+      selectedCount = dateFiltered.filter((d) => classifyDecision(d.round1Decision) === "Selected").length;
+      rejectedCount = 0;
+    } else if (decisionFilter === "Rejected") {
+      selectedCount = 0;
+      rejectedCount = dateFiltered.filter((d) => classifyDecision(d.round1Decision) === "Rejected").length;
+    } else {
+      selectedCount = dateFiltered.filter((d) => classifyDecision(d.round1Decision) === "Selected").length;
+      rejectedCount = dateFiltered.filter((d) => classifyDecision(d.round1Decision) === "Rejected").length;
+    }
+
+    const selectionRate = total > 0 ? ((selectedCount / total) * 100).toFixed(1) : "—";
     statTotalEl.textContent = total;
-    statSelectedEl.textContent = selected;
-    statRejectedEl.textContent = rejected;
+    statSelectedEl.textContent = selectedCount;
+    statRejectedEl.textContent = rejectedCount;
     statRateEl.textContent = selectionRate === "—" ? "—" : `${selectionRate}%`;
   }
 

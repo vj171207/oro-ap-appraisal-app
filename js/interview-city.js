@@ -24,6 +24,7 @@ async function main() {
   const statSelectedEl = document.getElementById("stat-selected");
   const statRejectedEl = document.getElementById("stat-rejected");
   const statRateEl = document.getElementById("stat-rate");
+  const decisionFilterSelect = document.getElementById("decision-filter-select");
   const quickRangeSelect = document.getElementById("quick-range-select");
   const fromDateInput = document.getElementById("from-date-input");
   const toDateInput = document.getElementById("to-date-input");
@@ -33,6 +34,7 @@ async function main() {
   let allRecords = [];
   let visibleRecords = [];
   const historyReconcileState = createReconcileState();
+  let appliedDecisionFilter = "all";
   let appliedFrom = "";
   let appliedTo = "";
 
@@ -65,14 +67,30 @@ async function main() {
     }
   }
 
+  function getAppliedRecords() {
+    let records = filterByDateWindow(allRecords, appliedFrom, appliedTo);
+    if (appliedDecisionFilter !== "all") {
+      records = records.filter((d) => classifyDecision(d.round1Decision) === appliedDecisionFilter);
+    }
+    return records;
+  }
+
   function applyFilters() {
+    appliedDecisionFilter = decisionFilterSelect.value;
     appliedFrom = fromDateInput.value;
     appliedTo = toDateInput.value;
 
+    // Stats use only the date filter — the Decision dropdown should never
+    // shrink Total (same bug as calibration's Result filter once did: it
+    // made Selection Rate always read 100%/0% whenever a specific Decision
+    // was chosen, since Total collapsed down to match). The visible history
+    // list below still correctly uses BOTH filters — narrowing the list by
+    // Decision is legitimate, this only fixes the stats.
     const dateFiltered = filterByDateWindow(allRecords, appliedFrom, appliedTo);
-    visibleRecords = dateFiltered;
     renderStats(dateFiltered);
-    renderList(dateFiltered);
+
+    visibleRecords = getAppliedRecords();
+    renderList(visibleRecords);
   }
 
   function renderStats(dateFiltered) {

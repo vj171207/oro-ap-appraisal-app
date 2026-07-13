@@ -1,6 +1,7 @@
 import { requireAuth } from "./authGuard.js";
 import { showErrorToast } from "./toast.js";
-import { KARAT_OPTIONS, scoreNeedle, computeResult } from "./scoring.js";
+import { scoreNeedle, computeResult } from "./scoring.js";
+import { karatStripHtml, optionsHtml } from "./needleUI.js";
 import { db, collection, addDoc, serverTimestamp, doc, getDoc } from "./firebase-config.js";
 
 // Flip to false to stop requiring every field on this form (except
@@ -147,48 +148,6 @@ async function main() {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
-  }
-
-  // Evenly space karat options across the strip with a small inner margin
-  // so end markers don't get clipped by the circle's own radius.
-  function karatPercent(value) {
-    const idx = KARAT_OPTIONS.indexOf(value);
-    const margin = 6;
-    const usable = 100 - margin * 2;
-    return margin + (idx / (KARAT_OPTIONS.length - 1)) * usable;
-  }
-
-  function karatStripHtml(given, answer) {
-    const ticks = KARAT_OPTIONS.map((opt) => {
-      const pct = karatPercent(opt);
-      const shortLabel = opt === "Below 18K" ? "<18" : opt.replace("K", "");
-      return `<span class="tick-label" style="left:${pct}%">${shortLabel}</span>`;
-    }).join("");
-
-    const givenMarker = given
-      ? `<span class="marker given" style="left:${karatPercent(given)}%" title="Known: ${given}"></span>`
-      : "";
-    const answerMarker = answer
-      ? `<span class="marker answer" style="left:${karatPercent(answer)}%" title="AP answer: ${answer}"></span>`
-      : "";
-
-    return `
-      <div class="karat-strip">
-        <div class="track"></div>
-        ${ticks}
-        ${givenMarker}
-        ${answerMarker}
-      </div>
-    `;
-  }
-
-  function optionsHtml(selected) {
-    return (
-      `<option value="" disabled ${!selected ? "selected" : ""}>Select…</option>` +
-      KARAT_OPTIONS.map(
-        (opt) => `<option value="${opt}" ${opt === selected ? "selected" : ""}>${opt}</option>`
-      ).join("")
-    );
   }
 
   const container = document.getElementById("needles-container");

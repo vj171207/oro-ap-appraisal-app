@@ -85,13 +85,16 @@
             <input type="number" id="scoreTheory" min="0" max="4" step="1" />
           </div>
           <div class="field">
-            <label for="scorePractical">Practical Score (out of 6)</label>
-            <input type="number" id="scorePractical" min="0" max="6" step="1" />
+            <label for="practical-score-card">Practical Score (out of 6)</label>
+            <button type="button" id="practical-score-card" class="practical-score-card">
+              <span id="practical-score-card-label">Click to begin</span>
+            </button>
+            <input type="hidden" id="scorePractical" />
           </div>
         </div>
         <div class="field">
           <label for="totalScore">Total Score</label>
-          <input type="number" id="totalScore" min="0" max="10" step="1" />
+          <input type="number" id="totalScore" min="0" max="10" step="1" readonly placeholder="Auto-calculated from Theory + Practical" />
         </div>
       </div>
 
@@ -122,8 +125,12 @@
           </div>
         </div>
         <div class="field">
-          <label for="round1Decision">Round 1 Decision (Selected/Rejected — if rejected, why?)</label>
-          <input type="text" id="round1Decision" placeholder="e.g. Selected, or Rejected due to lack of appraisal knowledge" />
+          <label for="round1Decision">Round 1 Decision</label>
+          <select id="round1Decision">
+            <option value="" disabled selected>Select…</option>
+            <option value="Selected">Selected</option>
+            <option value="Rejected">Rejected</option>
+          </select>
         </div>
         <div class="field">
           <label for="interviewer">Round 1 Interviewer (Appraisal)</label>
@@ -131,7 +138,7 @@
         </div>
         <div class="field">
           <label for="remarks">Detailed Remarks</label>
-          <textarea id="remarks" rows="3" placeholder="Any additional observations…"></textarea>
+          <textarea id="remarks" rows="3" placeholder="Any additional observations… (if Rejected, note the reason here)"></textarea>
         </div>
       </div>
 
@@ -150,6 +157,19 @@
       <a href="interview.html" class="btn btn-secondary mt-10">Back to city selection</a>
     </div>
   </main>
+
+  <!-- ===== PRACTICAL SCORE MODAL (needle-by-needle, same mechanism as AP Calibration) ===== -->
+  <div id="practical-modal-overlay" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h2>Practical Score — Needle Scoring</h2>
+      <p class="modal-subtitle">Same needle scoring mechanism as AP Calibration — known karat value vs. the candidate's answer.</p>
+      <div id="practical-needles-container"></div>
+      <div class="modal-actions">
+        <button type="button" id="practical-modal-cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="practical-modal-save-btn" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="js/interview-entry.js"></script>
 </body>

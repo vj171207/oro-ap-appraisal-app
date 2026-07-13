@@ -1,6 +1,8 @@
 import { requireAuth } from "./authGuard.js";
 import { showErrorToast } from "./toast.js";
 import { db, collection, addDoc, serverTimestamp } from "./firebase-config.js";
+import { scoreNeedle } from "./scoring.js";
+import { karatStripHtml, optionsHtml } from "./needleUI.js";
 
 // Flip to false to stop requiring every field on this form. Remarks and
 // Location (optional detail) stay exempt either way — Remarks is freeform
@@ -44,6 +46,146 @@ async function main() {
   const today = new Date();
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   document.getElementById("interviewDate").value = todayIso; // pre-filled, but a normal <input type="date"> — freely editable
+
+  // ---- Practical Score — needle-by-needle popup ----------------------
+  // Same scoring mechanism as AP Calibration (scoreNeedle from scoring.js,
+  // karatStripHtml/optionsHtml from needleUI.js — literally the same code,
+  // not a lookalike copy), just 3 needles instead of 5: 3 x 2pts max = 6,
+  // matching "Practical Score (out of 6)" exactly.
+  const PRACTICAL_NEEDLE_COUNT = 3;
+
+  const scoreTheoryInput = document.getElementById("scoreTheory");
+  const scorePracticalInput = document.getElementById("scorePractical");
+  const totalScoreInput = document.getElementById("totalScore");
+  const practicalCardBtn = document.getElementById("practical-score-card");
+  const practicalCardLabel = document.getElementById("practical-score-card-label");
+  const practicalModalOverlay = document.getElementById("practical-modal-overlay");
+  const practicalNeedlesContainer = document.getElementById("practical-needles-container");
+  const practicalModalCancelBtn = document.getElementById("practical-modal-cancel-btn");
+  const practicalModalSaveBtn = document.getElementById("practical-modal-save-btn");
+
+  // Kept here (not just in the DOM) so re-opening the popup to edit an
+  // already-scored entry shows what was previously picked, rather than
+  // resetting every needle back to blank.
+  let practicalNeedleSelections = Array.from({ length: PRACTICAL_NEEDLE_COUNT }, () => ({ given: "", answer: "" }));
+  // The saved per-needle result, once Save has been clicked at least once —
+  // stored alongside the entry for the same audit-detail reasons AP
+  // Calibration stores its own `needles` array. Stays null until scored.
+  let practicalNeedleResults = null;
+
+  /** Total Score is always Theory + Practical, never typed in directly — recomputed whenever either input changes. */
+  function recomputeTotal() {
+    const theoryRaw = scoreTheoryInput.value;
+    const practicalRaw = scorePracticalInput.value;
+    totalScoreInput.value = theoryRaw === "" || practicalRaw === "" ? "" : String(Number(theoryRaw) + Number(practicalRaw));
+  }
+
+  scoreTheoryInput.addEventListener("input", recomputeTotal);
+
+  function updatePracticalCardLabel() {
+    if (scorePracticalInput.value === "") {
+      practicalCardLabel.textContent = "Click to begin";
+      practicalCardBtn.classList.remove("scored");
+    } else {
+      practicalCardLabel.textContent = `Score: ${scorePracticalInput.value} / 6 · Edit`;
+      practicalCardBtn.classList.add("scored");
+    }
+  }
+
+  /** Rebuilds the 3 needle cards inside the popup from the current selections (blank on first open, pre-filled if re-editing). */
+  function renderPracticalNeedles() {
+    practicalNeedlesContainer.innerHTML = "";
+    for (let i = 0; i < PRACTICAL_NEEDLE_COUNT; i++) {
+      const sel = practicalNeedleSelections[i];
+      const card = document.createElement("div");
+      card.className = "needle-card";
+      card.dataset.needleIndex = i;
+      card.innerHTML = `
+        <div class="needle-title">NEEDLE ${i + 1}</div>
+        <div class="needle-selects">
+          <div class="field" style="margin-bottom: 0;">
+            <label>Known value (given to candidate)</label>
+            <select class="given-select">${optionsHtml(sel.given)}</select>
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label>Candidate's answer</label>
+            <select class="answer-select">${optionsHtml(sel.answer)}</select>
+          </div>
+        </div>
+        <div class="strip-container"></div>
+        <div class="needle-score">
+          <span class="label">Score</span>
+          <span><span class="score-pill" style="display:none;"></span></span>
+        </div>
+      `;
+      practicalNeedlesContainer.appendChild(card);
+
+      const givenSelect = card.querySelector(".given-select");
+      const answerSelect = card.querySelector(".answer-select");
+      const stripContainer = card.querySelector(".strip-container");
+      const scorePill = card.querySelector(".score-pill");
+
+      function update() {
+        const given = givenSelect.value;
+        const answer = answerSelect.value;
+        practicalNeedleSelections[i] = { given, answer };
+        stripContainer.innerHTML = karatStripHtml(given, answer);
+
+        if (given && answer) {
+          const { score } = scoreNeedle(given, answer);
+          scorePill.style.display = "inline-block";
+          scorePill.textContent = `${score} pt${score === 1 ? "" : "s"}`;
+          scorePill.className = `score-pill score-${score}`;
+        } else {
+          scorePill.style.display = "none";
+        }
+      }
+
+      givenSelect.addEventListener("change", update);
+      answerSelect.addEventListener("change", update);
+      update();
+    }
+  }
+
+  function openPracticalModal() {
+    renderPracticalNeedles();
+    practicalModalOverlay.hidden = false;
+  }
+
+  function closePracticalModal() {
+    practicalModalOverlay.hidden = true;
+  }
+
+  practicalCardBtn.addEventListener("click", openPracticalModal);
+  practicalModalCancelBtn.addEventListener("click", closePracticalModal);
+  // Clicking the dark backdrop cancels too; clicking inside the modal card
+  // itself must not (checked via e.target being the overlay itself, not
+  // something inside it, since this listener is on the overlay and clicks
+  // inside the card bubble up to it).
+  practicalModalOverlay.addEventListener("click", (e) => {
+    if (e.target === practicalModalOverlay) closePracticalModal();
+  });
+
+  practicalModalSaveBtn.addEventListener("click", () => {
+    const gapFound = practicalNeedleSelections.some((s) => !s.given || !s.answer);
+    if (gapFound) {
+      showErrorToast("Please set every needle's Known Value and Candidate's Answer before saving.");
+      return;
+    }
+
+    const results = practicalNeedleSelections.map(({ given, answer }) => {
+      const { score } = scoreNeedle(given, answer);
+      return { given, answer, score };
+    });
+    const total = results.reduce((sum, r) => sum + r.score, 0);
+
+    practicalNeedleResults = results;
+    scorePracticalInput.value = String(total);
+    updatePracticalCardLabel();
+    recomputeTotal();
+    closePracticalModal();
+  });
+  // ----------------------------------------------------------------------
 
   const form = document.getElementById("interview-form");
 
@@ -115,6 +257,7 @@ async function main() {
         dlAvailable: dlAvailable || null,
         scoreTheory: scoreTheoryRaw === "" ? null : Number(scoreTheoryRaw),
         scorePractical: scorePracticalRaw === "" ? null : Number(scorePracticalRaw),
+        practicalNeedles: practicalNeedleResults, // per-needle given/answer/score detail, same audit-detail pattern as AP Calibration's `needles` field
         totalScore: totalScoreRaw === "" ? null : Number(totalScoreRaw),
         localLanguage,
         localLanguageProficiency: localLanguageProficiency || null,

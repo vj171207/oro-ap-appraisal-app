@@ -509,6 +509,80 @@ footer.app-footer {
   letter-spacing: 0.03em;
 }
 
+/* ---------- Practical Score card (AP Interview) ---------- */
+/* A clickable "field" that opens the needle-scoring popup, styled to sit
+   where a normal input would in the Appraisal Scores card. */
+
+.practical-score-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.practical-score-card:hover,
+.practical-score-card:focus-visible {
+  border-color: var(--accent);
+}
+
+.practical-score-card.scored {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------- Modal overlay (needle-scoring popup) ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.modal-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-card h2 {
+  margin: 0 0 6px;
+}
+
+.modal-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 /* ---------- Result banner ---------- */
 
 .result-banner {

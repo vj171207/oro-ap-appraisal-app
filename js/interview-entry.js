@@ -59,6 +59,7 @@ async function main() {
   const totalScoreInput = document.getElementById("totalScore");
   const practicalCardBtn = document.getElementById("practical-score-card");
   const practicalCardLabel = document.getElementById("practical-score-card-label");
+  const practicalCardEditTag = document.getElementById("practical-score-card-edit-tag");
   const practicalModalOverlay = document.getElementById("practical-modal-overlay");
   const practicalNeedlesContainer = document.getElementById("practical-needles-container");
   const practicalModalCancelBtn = document.getElementById("practical-modal-cancel-btn");
@@ -85,9 +86,11 @@ async function main() {
   function updatePracticalCardLabel() {
     if (scorePracticalInput.value === "") {
       practicalCardLabel.textContent = "Click to begin";
+      practicalCardEditTag.hidden = true;
       practicalCardBtn.classList.remove("scored");
     } else {
-      practicalCardLabel.textContent = `Score: ${scorePracticalInput.value} / 6 · Edit`;
+      practicalCardLabel.textContent = `Score: ${scorePracticalInput.value} / 6`;
+      practicalCardEditTag.hidden = false;
       practicalCardBtn.classList.add("scored");
     }
   }
@@ -104,7 +107,7 @@ async function main() {
         <div class="needle-title">NEEDLE ${i + 1}</div>
         <div class="needle-selects">
           <div class="field" style="margin-bottom: 0;">
-            <label>Known value (given to candidate)</label>
+            <label>Known value</label>
             <select class="given-select">${optionsHtml(sel.given)}</select>
           </div>
           <div class="field" style="margin-bottom: 0;">

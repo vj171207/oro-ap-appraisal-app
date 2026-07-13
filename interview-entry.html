@@ -88,6 +88,7 @@
             <label for="practical-score-card">Practical Score (out of 6)</label>
             <button type="button" id="practical-score-card" class="practical-score-card">
               <span id="practical-score-card-label">Click to begin</span>
+              <span id="practical-score-card-edit-tag" class="practical-score-edit-tag" hidden>Edit</span>
             </button>
             <input type="hidden" id="scorePractical" />
           </div>
@@ -162,7 +163,6 @@
   <div id="practical-modal-overlay" class="modal-overlay" hidden>
     <div class="modal-card">
       <h2>Practical Score — Needle Scoring</h2>
-      <p class="modal-subtitle">Same needle scoring mechanism as AP Calibration — known karat value vs. the candidate's answer.</p>
       <div id="practical-needles-container"></div>
       <div class="modal-actions">
         <button type="button" id="practical-modal-cancel-btn" class="btn btn-secondary">Cancel</button>

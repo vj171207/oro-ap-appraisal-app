@@ -509,12 +509,20 @@ footer.app-footer {
   letter-spacing: 0.03em;
 }
 
+.modal-card .needle-selects label {
+  min-height: 34px; /* keeps Known value / Candidate's answer selects aligned even if one label wraps to 2 lines on a narrow screen */
+}
+
 /* ---------- Practical Score card (AP Interview) ---------- */
 /* A clickable "field" that opens the needle-scoring popup, styled to sit
    where a normal input would in the Appraisal Scores card. */
 
 .practical-score-card {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -525,6 +533,13 @@ footer.app-footer {
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s ease;
+}
+
+.practical-score-edit-tag {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
 .practical-score-card:hover,

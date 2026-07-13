@@ -49,6 +49,7 @@ export function requireAuth() {
       if (user && isAllowedEmail(user.email)) {
         renderUserBar(user);
         wireDatePickerClicks();
+        document.body.classList.add("auth-ready");
         resolve(user);
       } else {
         if (user) {

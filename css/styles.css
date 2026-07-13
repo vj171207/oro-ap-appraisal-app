@@ -54,6 +54,24 @@ body {
 
 a { color: inherit; text-decoration: none; }
 
+/* Hidden by default until the auth check finishes — prevents a brief flash
+   of a protected page's real content before authGuard.js redirects an
+   unauthenticated visitor to login.html (the module script that runs the
+   auth check sits at the bottom of <body>, so without this the browser
+   paints the whole page first and only then decides to redirect away).
+   authGuard.js's requireAuth() adds .auth-ready once a valid session is
+   confirmed; login.js does the same once it's decided to actually show the
+   sign-in form rather than silently redirecting an already-signed-in user
+   elsewhere. Every page links this one shared stylesheet, so this single
+   rule covers all of them — no per-page markup changes needed. */
+body:not(.auth-ready) {
+  visibility: hidden;
+}
+
+body.auth-ready {
+  visibility: visible;
+}
+
 /* ---------- Layout shell ---------- */
 
 .app-header {

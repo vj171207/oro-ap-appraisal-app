@@ -54,13 +54,24 @@ function wasPageReloaded() {
 }
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return;
+  if (!user) {
+    document.body.classList.add("auth-ready"); // genuinely showing the sign-in form
+    return;
+  }
   if (wasPageReloaded()) {
     await signOut(auth);
+    document.body.classList.add("auth-ready"); // signed out, form should show
     return;
   }
   if (isAllowedEmail(user.email)) {
-    window.location.href = getNextUrl();
+    window.location.href = getNextUrl(); // navigating away — stay hidden, no reveal
+  } else {
+    // Signed in, but with a disallowed email, and not a reload — previously
+    // fell through silently here (harmless before, since the page was
+    // visible by default). Now that the page is hidden until revealed,
+    // this branch needs its own explicit reveal too, or it would leave the
+    // page permanently blank instead of showing the sign-in form.
+    document.body.classList.add("auth-ready");
   }
 });
 

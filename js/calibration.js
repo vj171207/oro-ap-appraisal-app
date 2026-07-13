@@ -2,6 +2,7 @@ import { requireAuth } from "./authGuard.js";
 import { showErrorToast } from "./toast.js";
 import { scoreNeedle, computeResult } from "./scoring.js";
 import { karatStripHtml, optionsHtml } from "./needleUI.js";
+import { loadAuditorList } from "./auditorList.js";
 import { db, collection, addDoc, serverTimestamp, doc, getDoc } from "./firebase-config.js";
 
 // Flip to false to stop requiring every field on this form (except
@@ -46,22 +47,7 @@ async function main() {
   let auditorList = [];
 
   async function loadAuditors() {
-    try {
-      const snap = await getDoc(doc(db, "config", "auditors"));
-      const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
-      auditorList = rawList.filter(
-        (a) =>
-          a &&
-          typeof a === "object" &&
-          typeof a.name === "string" &&
-          a.name.trim().length > 0 &&
-          typeof a.empCode === "string" &&
-          a.empCode.trim().length > 0
-      );
-    } catch (err) {
-      console.error("Couldn't load auditor list.", err);
-      auditorList = [];
-    }
+    auditorList = await loadAuditorList(db);
 
     auditorNameSelect.innerHTML =
       `<option value="" disabled selected>Select…</option>` +

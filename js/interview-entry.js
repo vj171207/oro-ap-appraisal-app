@@ -3,6 +3,7 @@ import { showErrorToast } from "./toast.js";
 import { db, collection, addDoc, serverTimestamp } from "./firebase-config.js";
 import { scoreNeedle } from "./scoring.js";
 import { karatStripHtml, optionsHtml } from "./needleUI.js";
+import { loadAuditorList } from "./auditorList.js";
 
 // Flip to false to stop requiring every field on this form. Remarks and
 // Location (optional detail) stay exempt either way — Remarks is freeform
@@ -28,7 +29,7 @@ const LOCAL_LANGUAGE_BY_CITY = {
 };
 
 async function main() {
-  await requireAuth();
+  const currentUser = await requireAuth();
 
   const params = new URLSearchParams(window.location.search);
   const city = params.get("city");
@@ -46,6 +47,48 @@ async function main() {
   const today = new Date();
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   document.getElementById("interviewDate").value = todayIso; // pre-filled, but a normal <input type="date"> — freely editable
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---- Round 1 Interviewer — standardized dropdown (config/auditors) --
+  // Was free text before, which let the same person show up as "Vibhav",
+  // "Vibhav J", "VJ", etc. across entries. Now it's the same roster/dropdown
+  // AP Calibration already uses (via the shared loadAuditorList helper —
+  // same list, not a lookalike copy), so only a standardized name can ever
+  // be selected. As a convenience, whichever roster entry's email matches
+  // the currently signed-in user is pre-selected — still fully changeable,
+  // for the case where a Manager is filling this in on someone else's
+  // behalf, or the match doesn't find anything (e.g. no email on record
+  // for entries added before that field existed).
+  const interviewerSelect = document.getElementById("interviewer");
+
+  async function loadInterviewer() {
+    const auditorList = await loadAuditorList(db);
+
+    interviewerSelect.innerHTML =
+      `<option value="" disabled selected>Select…</option>` +
+      auditorList
+        .map((a) => `<option value="${escapeHtml(a.name)}">${escapeHtml(a.name)}</option>`)
+        .join("");
+
+    const currentEmail = (currentUser.email || "").toLowerCase();
+    const match = currentEmail
+      ? auditorList.find((a) => typeof a.email === "string" && a.email.toLowerCase() === currentEmail)
+      : null;
+    if (match) {
+      interviewerSelect.value = match.name;
+    }
+    // If there's no match (no email on record, or the signed-in account
+    // isn't in the roster yet), the placeholder stays selected and the
+    // Manager/auditor picks their own name manually — same as before,
+    // just from a fixed list instead of free text.
+  }
+
+  loadInterviewer();
 
   // ---- Practical Score — needle-by-needle popup ----------------------
   // Same scoring mechanism as AP Calibration (scoreNeedle from scoring.js,

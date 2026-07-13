@@ -124,7 +124,7 @@ async function main() {
 
   function renderList(visible) {
     if (allRecords.length === 0) {
-      historyEl.innerHTML = `<div class="empty-state">No calibrations recorded for ${city} yet. Start one above.</div>`;
+      historyEl.innerHTML = `<div class="empty-state">No calibrations recorded for ${escapeHtml(city)} yet. Start one above.</div>`;
       historyReconcileState.nodesByKey.clear();
       historyReconcileState.initialized = false; // next non-empty render should clear this empty-state message first
       return;

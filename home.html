@@ -68,6 +68,14 @@
     </div>
   </main>
 
-  <script type="module" src="js/home.js"></script>
+  <script type="module">
+    import { requireAuth } from "./js/authGuard.js";
+
+    async function main() {
+      await requireAuth();
+    }
+
+    main();
+  </script>
 </body>
 </html>

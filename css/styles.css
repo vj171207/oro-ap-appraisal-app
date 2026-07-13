@@ -956,3 +956,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   color: var(--accent);
   font-size: 15px;
 }
+
+/* ---------- Spacing utilities ----------
+   Replaces repeated inline style="margin-top: Npx" across several pages
+   (city.html, index.html, interview.html, interview-city.html,
+   interview-entry.html, settings-calibration.html) with reusable classes —
+   same visual result, but a future spacing tweak is one CSS edit instead
+   of hunting through 6 HTML files. */
+.mt-8 { margin-top: 8px; }
+.mt-10 { margin-top: 10px; }
+.mt-12 { margin-top: 12px; }
+.mt-20 { margin-top: 20px; }
+.mt-28 { margin-top: 28px; }

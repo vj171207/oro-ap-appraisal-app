@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search · Oro AP Interview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div id="user-bar" class="user-bar"></div>
+    <a href="interview.html" class="back-link">&larr; All cities</a>
+    <p class="eyebrow">Made for ORO.</p>
+    <h1>Search Candidates</h1>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="field" style="margin-bottom: 0;">
+        <label for="search-input">Search by candidate name</label>
+        <input type="text" id="search-input" placeholder="e.g. Ravi Kumar" autocomplete="off" />
+      </div>
+      <p class="section-label mt-8" id="search-status">Searches every city — start typing a name.</p>
+    </div>
+
+    <div id="search-results" class="mt-20"></div>
+  </main>
+
+  <script type="module" src="js/interview-search.js"></script>
+</body>
+</html>

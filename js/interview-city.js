@@ -3,6 +3,7 @@ import { db, collection, getDocs, query, where, orderBy } from "./firebase-confi
 import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, computeDecisionStats, classifyDecision } from "./interviewStats.js";
 import { downloadSingleSheetInterviewWorkbook } from "./exportInterviewExcel.js";
 import { createReconcileState, reconcileList } from "./domReconcile.js";
+import { buildDetailHtml, formatDateShort, escapeHtml } from "./interviewRecordView.js";
 
 async function main() {
   await requireAuth();
@@ -194,40 +195,6 @@ async function main() {
     if (from && to) return `${from} to ${to}`;
     if (from) return `From ${from}`;
     return `Up to ${to}`;
-  }
-
-  function buildDetailHtml(d) {
-    return `
-      <div class="detail-grid">
-        <div><span class="detail-label">Company</span>${escapeHtml(d.company || "—")}</div>
-        <div><span class="detail-label">Role</span>${escapeHtml(d.role || "—")}</div>
-        <div><span class="detail-label">Age</span>${d.age ?? "—"}</div>
-        <div><span class="detail-label">Experience</span>${escapeHtml(d.experience || "—")}</div>
-        <div><span class="detail-label">Bike / DL-LLR</span>${escapeHtml(d.bikeAvailable || "—")} / ${escapeHtml(d.dlAvailable || "—")}</div>
-        <div><span class="detail-label">Theory / Practical</span>${d.scoreTheory ?? "—"} / ${d.scorePractical ?? "—"}</div>
-        <div><span class="detail-label">Total Score</span>${d.totalScore ?? "—"}</div>
-        <div><span class="detail-label">${escapeHtml(d.localLanguage || "Local Language")} Proficiency</span>${escapeHtml(d.localLanguageProficiency || "—")}</div>
-        <div><span class="detail-label">English Proficiency</span>${escapeHtml(d.englishProficiency || "—")}</div>
-        <div><span class="detail-label">Interviewer</span>${escapeHtml(d.interviewer || "—")}</div>
-      </div>
-      <div class="remarks-block"><span class="detail-label">Round 1 Decision</span>${escapeHtml(d.round1Decision || "—")}</div>
-      ${d.remarks ? `<div class="remarks-block"><span class="detail-label">Detailed Remarks</span>${escapeHtml(d.remarks)}</div>` : ""}
-    `;
-  }
-
-  /** DD/MM/YY, for the compact collapsed row. */
-  function formatDateShort(isoYmd) {
-    if (!isoYmd) return "";
-    const parts = String(isoYmd).split("-");
-    if (parts.length !== 3) return "";
-    const [y, m, day] = parts;
-    return `${day}/${m}/${y.slice(-2)}`;
-  }
-
-  function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
   }
 
   loadHistory();

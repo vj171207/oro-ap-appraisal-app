@@ -4,6 +4,7 @@ import { db, collection, addDoc, serverTimestamp } from "./firebase-config.js";
 import { scoreNeedle } from "./scoring.js";
 import { karatStripHtml, optionsHtml } from "./needleUI.js";
 import { loadAuditorList } from "./auditorList.js";
+import { loadCityLanguageMap, resolveLanguageForCity } from "./cityLanguages.js";
 
 // Flip to false to stop requiring every field on this form. Remarks and
 // Location (optional detail) stay exempt either way — Remarks is freeform
@@ -11,22 +12,6 @@ import { loadAuditorList } from "./auditorList.js";
 // location differs from the city itself (the form leaves it blank
 // on purpose when it doesn't).
 const ENFORCE_ALL_FIELDS_REQUIRED = true;
-
-// City -> local language shown on the form, mirroring the per-city language
-// column already used in the source spreadsheet (Kannada tab for Bengaluru,
-// Tamil for Chennai, etc). Any city not listed here (e.g. a brand-new one
-// added later via Settings) falls back to a generic "Local Language" label
-// rather than breaking.
-const LOCAL_LANGUAGE_BY_CITY = {
-  "Bengaluru": "Kannada",
-  "Chennai": "Tamil",
-  "Hyderabad": "Telugu",
-  "Pune": "Marathi/Hindi",
-  "Vijayawada": "Telugu",
-  "Guntur": "Telugu",
-  "Warangal": "Telugu",
-  "Karimnagar": "Telugu",
-};
 
 async function main() {
   const currentUser = await requireAuth();
@@ -41,7 +26,8 @@ async function main() {
 
   document.getElementById("city-eyebrow").textContent = `Oro · ${city}`;
 
-  const localLanguage = LOCAL_LANGUAGE_BY_CITY[city] || "Local Language";
+  const cityLanguageMap = await loadCityLanguageMap(db);
+  const localLanguage = resolveLanguageForCity(city, cityLanguageMap) || "Local Language";
   document.getElementById("localLanguageLabel").textContent = `${localLanguage} Proficiency`;
 
   const today = new Date();

@@ -214,6 +214,31 @@ footer.app-footer {
   font-size: 18px;
 }
 
+/* ---------- Local Languages (AP Interview Settings only) ---------- */
+
+.city-language-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.city-language-input {
+  width: 130px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.city-language-msg {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 /* ---------- Buttons ---------- */
 
 .btn {

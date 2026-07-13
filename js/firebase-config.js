@@ -12,6 +12,7 @@ import {
   serverTimestamp,
   doc,
   getDoc,
+  setDoc,
   updateDoc,
   arrayUnion,
   arrayRemove,
@@ -54,6 +55,6 @@ const auth = getAuth(app);
 await setPersistence(auth, browserSessionPersistence);
 
 export {
-  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp,
+  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, Timestamp,
   auth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
 };

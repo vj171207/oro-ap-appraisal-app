@@ -12,6 +12,17 @@
 
 import { db, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "./firebase-config.js";
 
+/** @returns {Promise<string[]>} the filtered config/cities list. Exported so other AP Interview-only features (e.g. Local Languages in settings-interview.js) can read the same shared city list without a second copy of this fetch+filter logic. */
+export async function loadCityList(db) {
+  const snap = await getDoc(doc(db, "config", "cities"));
+  const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+  const list = rawList.filter((c) => typeof c === "string" && c.trim().length > 0);
+  if (list.length !== rawList.length) {
+    console.warn(`config/cities contains ${rawList.length - list.length} malformed entr(y/ies) — ignored. Check Firestore Console.`);
+  }
+  return list;
+}
+
 function toTitleCase(str) {
   return str
     .toLowerCase()
@@ -32,8 +43,15 @@ function updateToggleLabel(btn, noun, count, expanded) {
   btn.textContent = `${arrow} ${verb} current ${noun} (${count})`;
 }
 
-/** Call once per settings page, after the manager-access check has passed. */
-export function initCitySettings() {
+/**
+ * Call once per settings page, after the manager-access check has passed.
+ * @param {() => void} [onCityAdded] - Optional, fired right after a city is
+ *   successfully added. Used by settings-interview.js to refresh its
+ *   separate Local Languages section so the new city shows up there
+ *   immediately, without a page reload. settings-calibration.js doesn't
+ *   pass this (has nothing that needs to react to it) and is unaffected.
+ */
+export function initCitySettings(onCityAdded = () => {}) {
   const cityListEl = document.getElementById("city-list-display");
   const toggleCitiesBtn = document.getElementById("toggle-cities-btn");
   const newCityInput = document.getElementById("new-city-input");
@@ -45,12 +63,7 @@ export function initCitySettings() {
   let citiesExpanded = false;
 
   async function loadCities() {
-    const snap = await getDoc(citiesDocRef);
-    const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
-    const list = rawList.filter((c) => typeof c === "string" && c.trim().length > 0);
-    if (list.length !== rawList.length) {
-      console.warn(`config/cities contains ${rawList.length - list.length} malformed entr(y/ies) — ignored. Check Firestore Console.`);
-    }
+    const list = await loadCityList(db);
     renderCities(list);
     updateToggleLabel(toggleCitiesBtn, "cities", list.length, citiesExpanded);
     return list;
@@ -134,6 +147,7 @@ export function initCitySettings() {
       successEl.style.display = "block";
       newCityInput.value = "";
       await loadCities();
+      onCityAdded();
     } catch (err) {
       console.error(err);
       errorEl.textContent = "Couldn't add the city. Please try again.";

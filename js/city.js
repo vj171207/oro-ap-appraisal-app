@@ -11,7 +11,7 @@ async function main() {
   const city = params.get("city");
 
   if (!city) {
-    window.location.href = "index.html";
+    window.location.href = "calibration-home.html";
   }
 
   document.getElementById("city-title").textContent = city;

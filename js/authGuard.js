@@ -66,11 +66,16 @@ export function requireAuth() {
 
 // Bare names, without ".html" — vercel.json has "cleanUrls": true, which
 // strips the extension from the actual browser address bar (so
-// window.location.pathname for index.html is really "/index", not
-// "/index.html"). Comparing against the bare name handles that; it also
+// window.location.pathname for city.html is really "/city", not
+// "/city.html"). Comparing against the bare name handles that; it also
 // still works correctly if cleanUrls is ever turned off, since the ".html"
 // suffix gets stripped from the pathname below either way.
-const CALIBRATION_PAGES = ["", "index", "city", "calibration", "reports", "settings-calibration"];
+//
+// index.html is the cross-app workspace chooser (bare "" and "index" are
+// intentionally NOT listed in either array below — the chooser itself
+// isn't part of either app, so it correctly falls through to the `return
+// null` case, same as before this file was renamed from home.html).
+const CALIBRATION_PAGES = ["calibration-home", "city", "calibration", "reports", "settings-calibration"];
 const INTERVIEW_PAGES = ["interview", "interview-city", "interview-entry", "interview-reports", "settings-interview"];
 
 function currentSettingsPage() {
@@ -78,7 +83,7 @@ function currentSettingsPage() {
   const currentFile = lastSegment.replace(/\.html$/, "");
   if (CALIBRATION_PAGES.includes(currentFile)) return "settings-calibration.html";
   if (INTERVIEW_PAGES.includes(currentFile)) return "settings-interview.html";
-  return null; // home.html, login.html, or anything else outside either app
+  return null; // index.html (the chooser), login.html, or anything else outside either app
 }
 
 async function renderUserBar(user) {

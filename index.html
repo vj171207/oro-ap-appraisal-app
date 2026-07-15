@@ -3,87 +3,79 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Oro AP Appraisal Calibration</title>
+  <title>Oro — Auditor Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .hub-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      margin: 0 0 10px;
+    }
+    .hub-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 24px;
+    }
+    .hub-card {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+    .hub-card:hover, .hub-card:focus-visible {
+      background: var(--surface-raised);
+    }
+    .hub-card .hub-card-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .hub-card .hub-card-arrow {
+      color: var(--accent);
+      font-size: 18px;
+      float: right;
+    }
+  </style>
 </head>
-<body class="index-page">
+<body>
   <header class="app-header">
     <div id="user-bar" class="user-bar"></div>
-    <a href="home.html" class="back-link">&larr; Home</a>
     <p class="eyebrow">Made for ORO.</p>
-    <h1>AP Appraisal Calibration</h1>
+    <h1>Auditor Dashboard</h1>
   </header>
 
   <main>
-    <div class="history-layout">
-      <aside class="history-stats">
-        <div class="stats-card">
-          <div class="stat-row">
-            <span class="stat-label">Total</span>
-            <span class="stat-value" id="stat-total">—</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Pass</span>
-            <span class="stat-value pass" id="stat-pass">—</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Fail</span>
-            <span class="stat-value fail" id="stat-fail">—</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Clearance</span>
-            <span class="stat-value" id="stat-clearance">—</span>
-          </div>
-        </div>
-
-        <div class="filter-row">
-          <div class="field" style="margin-bottom: 0;">
-            <label for="result-filter-select">Result</label>
-            <select id="result-filter-select">
-              <option value="all">All</option>
-              <option value="Pass">Pass</option>
-              <option value="Fail">Fail</option>
-            </select>
-          </div>
-          <div class="field" style="margin-bottom: 0;">
-            <label for="quick-range-select">Quick range</label>
-            <select id="quick-range-select"></select>
-          </div>
-        </div>
-
-        <div class="filter-row mt-8">
-          <div class="field" style="margin-bottom: 0;">
-            <label for="from-date-input">From</label>
-            <input type="date" id="from-date-input" />
-          </div>
-          <div class="field" style="margin-bottom: 0;">
-            <label for="to-date-input">To</label>
-            <input type="date" id="to-date-input" />
-          </div>
-        </div>
-
-        <button type="button" id="apply-filters-btn" class="btn btn-primary mt-12">Apply</button>
-        <a href="search.html" class="btn btn-secondary mt-10">
-          🔎 Search by Name / Code
-        </a>
-      </aside>
-
-      <div>
-        <p class="section-label">Select a city to continue</p>
-        <div class="city-list" id="city-list"></div>
-
-        <a href="reports.html" class="btn btn-secondary mt-20">
-          📊 All-Cities Report
-        </a>
-      </div>
+    <p class="hub-label">Choose a workspace</p>
+    <div class="hub-grid">
+      <a href="calibration-home.html" class="hub-card">
+        <span class="hub-card-arrow">&rarr;</span>
+        <div class="hub-card-title">AP Appraisal Calibration</div>
+      </a>
+      <a href="interview.html" class="hub-card">
+        <span class="hub-card-arrow">&rarr;</span>
+        <div class="hub-card-title">AP Interview</div>
+      </a>
     </div>
   </main>
 
-  <footer class="app-footer">Quarterly calibration · per the Oro Appraisal SOP</footer>
+  <script type="module">
+    import { requireAuth } from "./js/authGuard.js";
 
-  <script type="module" src="js/index.js"></script>
+    async function main() {
+      await requireAuth();
+    }
+
+    main();
+  </script>
 </body>
 </html>

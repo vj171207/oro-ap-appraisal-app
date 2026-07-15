@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AP Interview · Oro</title>
+  <title>Oro AP Appraisal Calibration</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap">
@@ -14,7 +14,7 @@
     <div id="user-bar" class="user-bar"></div>
     <a href="index.html" class="back-link">&larr; Home</a>
     <p class="eyebrow">Made for ORO.</p>
-    <h1>AP Interview</h1>
+    <h1>AP Appraisal Calibration</h1>
   </header>
 
   <main>
@@ -26,26 +26,26 @@
             <span class="stat-value" id="stat-total">—</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Selected</span>
-            <span class="stat-value pass" id="stat-selected">—</span>
+            <span class="stat-label">Pass</span>
+            <span class="stat-value pass" id="stat-pass">—</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Rejected</span>
-            <span class="stat-value fail" id="stat-rejected">—</span>
+            <span class="stat-label">Fail</span>
+            <span class="stat-value fail" id="stat-fail">—</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Selection Rate</span>
-            <span class="stat-value" id="stat-rate">—</span>
+            <span class="stat-label">Clearance</span>
+            <span class="stat-value" id="stat-clearance">—</span>
           </div>
         </div>
 
         <div class="filter-row">
           <div class="field" style="margin-bottom: 0;">
-            <label for="decision-filter-select">Decision</label>
-            <select id="decision-filter-select">
+            <label for="result-filter-select">Result</label>
+            <select id="result-filter-select">
               <option value="all">All</option>
-              <option value="Selected">Selected</option>
-              <option value="Rejected">Rejected</option>
+              <option value="Pass">Pass</option>
+              <option value="Fail">Fail</option>
             </select>
           </div>
           <div class="field" style="margin-bottom: 0;">
@@ -66,8 +66,8 @@
         </div>
 
         <button type="button" id="apply-filters-btn" class="btn btn-primary mt-12">Apply</button>
-        <a href="interview-search.html" class="btn btn-secondary mt-10">
-          🔎 Search by Name
+        <a href="search.html" class="btn btn-secondary mt-10">
+          🔎 Search by Name / Code
         </a>
       </aside>
 
@@ -75,15 +75,15 @@
         <p class="section-label">Select a city to continue</p>
         <div class="city-list" id="city-list"></div>
 
-        <a href="interview-reports.html" class="btn btn-secondary mt-20">
-          ⬇ All-Cities Report
+        <a href="reports.html" class="btn btn-secondary mt-20">
+          📊 All-Cities Report
         </a>
       </div>
     </div>
   </main>
 
-  <footer class="app-footer">AP Interview tracking</footer>
+  <footer class="app-footer">Quarterly calibration · per the Oro Appraisal SOP</footer>
 
-  <script type="module" src="js/interview.js"></script>
+  <script type="module" src="js/calibration-home.js"></script>
 </body>
 </html>

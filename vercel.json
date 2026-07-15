@@ -1,5 +1,12 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/home.html",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

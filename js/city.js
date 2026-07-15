@@ -1,6 +1,7 @@
 import { requireAuth } from "./authGuard.js";
 import { db, collection, getDocs, query, where, orderBy } from "./firebase-config.js";
 import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, downloadSingleSheetWorkbook } from "./exportExcel.js";
+import { describeRange } from "./dateRangeUtils.js";
 import { createReconcileState, reconcileList } from "./domReconcile.js";
 import { buildDetailHtml, formatDateShort, escapeHtml } from "./calibrationRecordView.js";
 
@@ -203,14 +204,6 @@ async function main() {
       exportBtn.textContent = "⬇ Export to Excel";
     }
   });
-
-  /** Human-readable description of a From/To window, for the report's subtitle. */
-  function describeRange(from, to) {
-    if (!from && !to) return "All time";
-    if (from && to) return `${from} to ${to}`;
-    if (from) return `From ${from}`;
-    return `Up to ${to}`;
-  }
 
   loadHistory();
 

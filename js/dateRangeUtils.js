@@ -39,3 +39,11 @@ export function filterByDateField(records, fieldName, fromStr, toStr) {
     return true;
   });
 }
+
+/** Human-readable description of a From/To window, for a report's subtitle — e.g. "All time", "2026-01-01 to 2026-03-31", "From 2026-01-01", "Up to 2026-03-31". Previously defined identically in city.js, interview-city.js, reports.js, and interview-reports.js. */
+export function describeRange(from, to) {
+  if (!from && !to) return "All time";
+  if (from && to) return `${from} to ${to}`;
+  if (from) return `From ${from}`;
+  return `Up to ${to}`;
+}

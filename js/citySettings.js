@@ -126,8 +126,11 @@ export function initCitySettings(onCityAdded = () => {}) {
       return;
     }
 
-    // Spelling still must match the AP roster exactly, but casing is
-    // normalized automatically — "indore" and "INDORE" both save as "Indore".
+    // A city's spelling still must match exactly everywhere it's used (the
+    // entry forms, filters, and reports all compare city names as plain
+    // strings) — but casing is normalized automatically here, so at least
+    // that one common mismatch is handled for you: "indore" and "INDORE"
+    // both save as "Indore".
     const newCity = toTitleCase(rawInput);
 
     const currentList = await loadCities();

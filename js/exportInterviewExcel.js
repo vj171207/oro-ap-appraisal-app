@@ -7,21 +7,16 @@
 // Date-window filtering and quick-range helpers already live in
 // interviewStats.js (shared with the dashboards) — this file only owns the
 // workbook-building/styling, so the filter logic has one source of truth.
+//
+// Colors, borders, date formatting, the download-trigger, and the
+// on-demand ExcelJS-loading logic all live in excelExportShared.js — those
+// were byte-identical with exportExcel.js's copies, so they're pulled from
+// one place now. Everything below (headers, columns, row-building, the
+// actual styling rules) stays here, since this report's layout genuinely
+// differs from calibration's.
 
 import { classifyDecision } from "./interviewStats.js";
-
-const COLORS = {
-  navy: "FF1F2937",
-  white: "FFFFFFFF",
-  gold: "FFB08D57",
-  mutedText: "FF5B6472",
-  passFill: "FFDCEEE3",
-  passText: "FF1E6B45",
-  failFill: "FFF8DCD9",
-  failText: "FFA32E23",
-  zebra: "FFF7F7F8",
-  border: "FFD8DCE3",
-};
+import { COLORS, thinBorder, toLegacyDate, todayLabel, triggerDownload, ensureExcelJSLoaded } from "./excelExportShared.js";
 
 const HEADERS = [
   "SL", "Date", "Candidate Name", "City", "Location Detail",
@@ -40,27 +35,6 @@ const COLUMN_WIDTHS = [
   14, 15, 14,
   28, 11, 18, 30,
 ];
-
-const thinBorder = {
-  top: { style: "thin", color: { argb: COLORS.border } },
-  left: { style: "thin", color: { argb: COLORS.border } },
-  bottom: { style: "thin", color: { argb: COLORS.border } },
-  right: { style: "thin", color: { argb: COLORS.border } },
-};
-
-function toLegacyDate(isoYmd) {
-  if (!isoYmd) return "";
-  const parts = String(isoYmd).split("-");
-  if (parts.length !== 3) return isoYmd;
-  const [y, m, d] = parts;
-  return `${d}/${m}/${y}`;
-}
-
-function todayLabel() {
-  const d = new Date();
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
 
 /** Sorts records oldest-first and assigns a running SL, matching the calibration report's convention. */
 function toRowValues(records) {
@@ -236,48 +210,6 @@ function styleSummarySheet(ws, recordsByCity, rangeLabel) {
   ws.getColumn(5).width = 14;
 
   ws.views = [{ state: "frozen", ySplit: HEADER_ROW }];
-}
-
-function triggerDownload(buffer, filename) {
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-const EXCELJS_CDN_URL = "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
-
-// Same on-demand-load pattern as exportExcel.js: ExcelJS is several hundred
-// KB and only needed on the fraction of visits where Export is actually
-// clicked, so it's not loaded unconditionally on page load. If
-// exportExcel.js has already loaded it for this session (e.g. the person
-// visited a calibration page first), this resolves immediately via the
-// typeof check below rather than fetching a second copy.
-let exceljsLoadPromise = null;
-
-function ensureExcelJSLoaded() {
-  if (typeof ExcelJS !== "undefined") return Promise.resolve();
-  if (exceljsLoadPromise) return exceljsLoadPromise;
-
-  exceljsLoadPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = EXCELJS_CDN_URL;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      exceljsLoadPromise = null; // allow retry on a later export attempt
-      reject(new Error("Couldn't load the Excel export library. Check your connection and try again."));
-    };
-    document.head.appendChild(script);
-  });
-
-  return exceljsLoadPromise;
 }
 
 /** Downloads a single-sheet styled workbook for one city's (already filtered) records. */

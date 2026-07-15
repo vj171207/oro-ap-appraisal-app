@@ -20,6 +20,7 @@
 // from dateRangeUtils.js rather than each defining their own copy.
 export { QUICK_RANGE_OPTIONS, getQuickRangeDates } from "./dateRangeUtils.js";
 import { filterByDateField } from "./dateRangeUtils.js";
+import { COLORS, thinBorder, toLegacyDate, todayLabel, triggerDownload, ensureExcelJSLoaded } from "./excelExportShared.js";
 
 /** Filters records whose testDate falls within [fromStr, toStr] (inclusive). Empty string on either side means unbounded on that side. Both testDate and fromStr/toStr are "YYYY-MM-DD", so plain string comparison is correct. */
 export function filterByDateWindow(records, fromStr, toStr) {
@@ -29,19 +30,6 @@ export function filterByDateWindow(records, fromStr, toStr) {
 // ---------------------------------------------------------------------
 // Report styling
 // ---------------------------------------------------------------------
-
-const COLORS = {
-  navy: "FF1F2937",
-  white: "FFFFFFFF",
-  gold: "FFB08D57",
-  mutedText: "FF5B6472",
-  passFill: "FFDCEEE3",
-  passText: "FF1E6B45",
-  failFill: "FFF8DCD9",
-  failText: "FFA32E23",
-  zebra: "FFF7F7F8",
-  border: "FFD8DCE3",
-};
 
 const HEADERS = [
   "SL", "Month & Year", "Test Result", "Score /10",
@@ -57,27 +45,6 @@ const HEADERS = [
 
 const COLUMN_WIDTHS = [6, 12, 12, 10, 18, 14, 20, 14, 13, 12,
   11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 28];
-
-const thinBorder = {
-  top: { style: "thin", color: { argb: COLORS.border } },
-  left: { style: "thin", color: { argb: COLORS.border } },
-  bottom: { style: "thin", color: { argb: COLORS.border } },
-  right: { style: "thin", color: { argb: COLORS.border } },
-};
-
-function toLegacyDate(isoYmd) {
-  if (!isoYmd) return "";
-  const parts = String(isoYmd).split("-");
-  if (parts.length !== 3) return isoYmd;
-  const [y, m, d] = parts;
-  return `${d}/${m}/${y}`;
-}
-
-function todayLabel() {
-  const d = new Date();
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
 
 /** Sorts records oldest-first and assigns a running SL, matching the original sheet's convention. */
 function toRowValues(records) {
@@ -249,49 +216,6 @@ function styleSummarySheet(ws, recordsByCity, rangeLabel) {
   ws.getColumn(4).width = 14;
 
   ws.views = [{ state: "frozen", ySplit: HEADER_ROW }];
-}
-
-function triggerDownload(buffer, filename) {
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-const EXCELJS_CDN_URL = "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
-
-// ExcelJS is a large library (several hundred KB) that used to be loaded
-// unconditionally in <head> on every visit to city.html/reports.html, even
-// though most visits never click Export — that blocked page rendering for
-// a feature used a small fraction of the time. Loaded on-demand instead,
-// only when an export is actually requested. Cached so a second export in
-// the same session doesn't re-fetch or re-inject the script tag, and safe
-// to call concurrently (e.g. double-clicking Export) without loading twice.
-let exceljsLoadPromise = null;
-
-function ensureExcelJSLoaded() {
-  if (typeof ExcelJS !== "undefined") return Promise.resolve();
-  if (exceljsLoadPromise) return exceljsLoadPromise;
-
-  exceljsLoadPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = EXCELJS_CDN_URL;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      exceljsLoadPromise = null; // allow retry on a later export attempt
-      reject(new Error("Couldn't load the Excel export library. Check your connection and try again."));
-    };
-    document.head.appendChild(script);
-  });
-
-  return exceljsLoadPromise;
 }
 
 /** Downloads a single-sheet styled workbook for one city's (already filtered) records. */

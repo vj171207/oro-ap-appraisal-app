@@ -15,9 +15,11 @@ export function filterByDateWindow(records, fromStr, toStr) {
 }
 
 /**
- * Round 1 Decision is free text (e.g. "Selected", "Rejected due to lack of
- * appraisal knowledge", "Not Selected"), not a fixed dropdown — so this is a
- * best-effort text classifier, not an exact field read. "Not selected" is
+ * Round 1 Decision is a Selected/Rejected dropdown on the entry form now —
+ * but records saved before that existed have free-text values (e.g.
+ * "Rejected due to lack of appraisal knowledge", "Not Selected"), so this
+ * stays a best-effort text classifier rather than an exact field read, to
+ * keep those older records correctly bucketed too. "Not selected" is
  * checked before the generic "select" match so it correctly lands as
  * Rejected rather than Selected. Anything that matches neither pattern
  * (blank, or an unusual phrasing) falls into "Other" rather than being

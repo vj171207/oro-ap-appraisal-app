@@ -1,13 +1,12 @@
 import { requireAuth } from "./authGuard.js";
 import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
-import { getCities } from "./cities.js";
 import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow } from "./interviewStats.js";
+import { describeRange } from "./dateRangeUtils.js";
 import { downloadMultiCityInterviewWorkbook } from "./exportInterviewExcel.js";
 
 async function main() {
   await requireAuth();
 
-  const cities = await getCities();
   const quickRangeSelect = document.getElementById("quick-range-select");
   const fromDateInput = document.getElementById("from-date-input");
   const toDateInput = document.getElementById("to-date-input");
@@ -58,9 +57,16 @@ async function main() {
       return;
     }
 
+    // Grouped by whatever city value each record actually has, not by the
+    // CURRENT config/cities list — see reports.js for the full reasoning
+    // (a record under a renamed/removed city would otherwise silently
+    // vanish from every per-city sheet here, though it stays visible in
+    // Firestore and in the "Overall" sheet below).
     const recordsByCity = {};
-    cities.forEach((city) => {
-      recordsByCity[city] = filtered.filter((r) => r.city === city);
+    filtered.forEach((r) => {
+      const cityKey = r.city || "(No city)";
+      if (!recordsByCity[cityKey]) recordsByCity[cityKey] = [];
+      recordsByCity[cityKey].push(r);
     });
 
     const sortedAll = [...filtered].sort((a, b) => {
@@ -86,14 +92,6 @@ async function main() {
       exportBtn.textContent = "⬇ Download Report";
     }
   });
-
-  /** Human-readable description of a From/To window, for the report's subtitle. */
-  function describeRange(from, to) {
-    if (!from && !to) return "All time";
-    if (from && to) return `${from} to ${to}`;
-    if (from) return `From ${from}`;
-    return `Up to ${to}`;
-  }
 
   loadAll();
 }

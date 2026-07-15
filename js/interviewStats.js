@@ -24,12 +24,20 @@ export function filterByDateWindow(records, fromStr, toStr) {
  * Rejected rather than Selected. Anything that matches neither pattern
  * (blank, or an unusual phrasing) falls into "Other" rather than being
  * guessed at.
+ *
+ * "next level" / "ok for next level" is a second legacy phrasing, used for
+ * selected candidates specifically in Bengaluru, Karimnagar, and Pune's
+ * older records, before "Selected" itself was the standard wording. Checked
+ * after the reject/select checks above (so a genuine rejection is never
+ * misread), with a same-line negation guard ("not ok...") as a safety net,
+ * even though no such record has actually been seen.
  */
 export function classifyDecision(decisionText) {
   const text = (decisionText || "").toLowerCase();
   if (!text.trim()) return "Other";
   if (text.includes("not selected") || text.includes("reject")) return "Rejected";
   if (text.includes("select")) return "Selected";
+  if (text.includes("next level") && !text.includes("not ok")) return "Selected";
   return "Other";
 }
 

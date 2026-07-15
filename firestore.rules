@@ -42,11 +42,33 @@ service cloud.firestore {
 
     match /interview_entries/{entryId} {
       allow read: if isOroUser();
+      // Mirrors calibrations' rigor above — this used to only require 3
+      // fields (city/interviewDate/candidateName) while every other field
+      // on the form was already mandatory client-side, an asymmetry that
+      // meant anyone bypassing the UI (direct API call, a future bug in the
+      // client validation) could write a record missing everything else,
+      // or with an out-of-range score, and Firestore would accept it.
       allow create: if isOroUser()
-                    && request.resource.data.keys().hasAll(['city','interviewDate','candidateName'])
+                    && request.resource.data.keys().hasAll(
+                        ['city','interviewDate','candidateName','locationDetail','company','role',
+                         'age','experience','bikeAvailable','dlAvailable','scoreTheory','scorePractical',
+                         'totalScore','localLanguage','localLanguageProficiency','englishProficiency',
+                         'round1Decision','interviewer'])
                     && request.resource.data.city is string
                     && request.resource.data.candidateName is string
-                    && request.resource.data.candidateName.size() > 0;
+                    && request.resource.data.candidateName.size() > 0
+                    && request.resource.data.scoreTheory is number
+                    && request.resource.data.scoreTheory >= 0
+                    && request.resource.data.scoreTheory <= 4
+                    && request.resource.data.scorePractical is number
+                    && request.resource.data.scorePractical >= 0
+                    && request.resource.data.scorePractical <= 6
+                    && request.resource.data.totalScore is number
+                    && request.resource.data.totalScore >= 0
+                    && request.resource.data.totalScore <= 10
+                    && request.resource.data.bikeAvailable in ['Yes', 'No']
+                    && request.resource.data.dlAvailable in ['Yes - DL', 'Yes - LLR', 'No']
+                    && request.resource.data.round1Decision in ['Selected', 'Rejected'];
       allow update, delete: if false; // audit integrity, same as calibrations
     }
 

@@ -1,6 +1,7 @@
 import { requireAuth, isManagerEmail } from "./authGuard.js";
-import { db, doc, getDoc } from "./firebase-config.js";
+import { db } from "./firebase-config.js";
 import { initCitySettings } from "./citySettings.js";
+import { loadAuditorList } from "./auditorList.js";
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -30,28 +31,10 @@ async function main() {
   const auditorErrorEl = document.getElementById("add-auditor-error");
   const auditorSuccessEl = document.getElementById("add-auditor-success");
 
-  const auditorsDocRef = doc(db, "config", "auditors");
   let auditorsExpanded = false;
 
   async function loadAuditors() {
-    const snap = await getDoc(auditorsDocRef);
-    const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
-    // Defensive filter: a malformed entry (e.g. a stray placeholder left by
-    // Firestore Console's "add array field" UI, which isn't a proper
-    // {name, empCode} object) should be silently dropped here, not crash
-    // the whole page the way a bare .toLowerCase() on undefined would.
-    const list = rawList.filter(
-      (a) =>
-        a &&
-        typeof a === "object" &&
-        typeof a.name === "string" &&
-        a.name.trim().length > 0 &&
-        typeof a.empCode === "string" &&
-        a.empCode.trim().length > 0
-    );
-    if (list.length !== rawList.length) {
-      console.warn(`config/auditors contains ${rawList.length - list.length} malformed entr(y/ies) — ignored. Check Firestore Console.`);
-    }
+    const list = await loadAuditorList(db);
     renderAuditors(list);
     updateToggleLabel(toggleAuditorsBtn, "auditors", list.length, auditorsExpanded);
     return list;

@@ -12,6 +12,7 @@ async function main() {
 
   if (!city) {
     window.location.href = "calibration-home.html";
+    return;
   }
 
   document.getElementById("city-title").textContent = city;

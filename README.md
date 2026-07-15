@@ -9,9 +9,10 @@ common infrastructure (auth, city list, toasts):
 - **AP Interview** — tracking candidate interview results during AP hiring.
 
 They're two separate workspaces from the person's point of view (see
-`home.html`), each with its own city dashboards, entry forms, reports, and
-Settings page — but genuinely two apps, not one app with a mode switch.
-"Shared" below means literally shared code/data, not just similar-looking.
+`index.html`, the workspace chooser), each with its own city dashboards,
+entry forms, reports, and Settings page — but genuinely two apps, not one
+app with a mode switch. "Shared" below means literally shared code/data,
+not just similar-looking.
 
 ## AP Appraisal Calibration
 
@@ -62,7 +63,10 @@ trying to find where something lives.
 
 ```
 SHARED (used by both apps)
-├── home.html + js/home.js        Landing page — pick a workspace
+├── index.html                    Workspace chooser (landing page) — pick
+│                                  AP Calibration or AP Interview. Small
+│                                  inline script (just requireAuth()), no
+│                                  separate js/ file of its own
 ├── login.html + js/login.js      Sign-in form (domain-restricted)
 ├── css/styles.css                All styling, both apps
 ├── js/authGuard.js                Auth check + user-bar + Settings-link
@@ -84,18 +88,36 @@ SHARED (used by both apps)
                                    identical between the two apps
 
 AP APPRAISAL CALIBRATION
-├── index.html + js/index.js       City selection (landing page)
+├── calibration-home.html + js/calibration-home.js
+│                                  City selection + all-cities stats
+│                                  dashboard (was index.html/js/index.js
+│                                  before index.html became the shared
+│                                  workspace chooser above)
 ├── city.html + js/city.js         One city's calibration history +
 │                                  "New calibration" button
 ├── calibration.html + js/calibration.js
 │                                  New calibration entry form (5 needles)
 ├── reports.html + js/reports.js   All-cities Excel report
+├── search.html + js/search.js     Cross-city search by AP name or
+│                                  employee code
 ├── settings-calibration.html + js/settings-calibration.js
 │                                  Auditor roster management + city list
 │                                  (city list section delegates to the
 │                                  shared js/citySettings.js)
 ├── js/scoring.js                  Scoring rules — pure functions, no
 │                                  dependencies (see below)
+├── js/needleUI.js                 Shared needle-scoring visual helpers
+│                                  (karat strip, given/answer selects) —
+│                                  also used by AP Interview's practical
+│                                  score popup, so both use the exact same
+│                                  rendering code
+├── js/auditorList.js              Fetches config/auditors — also used by
+│                                  AP Interview's Round 1 Interviewer
+│                                  dropdown (same roster, one source)
+├── js/calibrationRecordView.js    Renders one calibration record's
+│                                  expanded detail view — shared between
+│                                  city.html and search.html so both show
+│                                  identical detail
 └── js/exportExcel.js               Excel export styling/generation
 
 AP INTERVIEW
@@ -108,14 +130,38 @@ AP INTERVIEW
 │                                  New interview entry form
 ├── interview-reports.html + js/interview-reports.js
 │                                  All-cities Excel report
+├── interview-search.html + js/interview-search.js
+│                                  Cross-city search by candidate name
 ├── settings-interview.html + js/settings-interview.js
-│                                  City list only (nothing interview-
-│                                  specific to manage yet — no interviewer
-│                                  roster the way calibration has auditors)
+│                                  City list (delegates to the shared
+│                                  js/citySettings.js) + a Local Languages
+│                                  section (interview-only — sets which
+│                                  language each city's "Local Language
+│                                  Proficiency" field asks about; NOT
+│                                  shared with AP Calibration, since
+│                                  language isn't a calibration concept).
+│                                  No separate interviewer roster of its
+│                                  own — Round 1 Interviewer reuses AP
+│                                  Calibration's auditor roster (see
+│                                  js/auditorList.js above)
 ├── js/interviewStats.js           Decision classification (Selected/
-│                                  Rejected — Round 1 Decision is free
-│                                  text, not a fixed field) + re-exports
-│                                  the shared date-range helpers
+│                                  Rejected) + re-exports the shared
+│                                  date-range helpers. Round 1 Decision is
+│                                  a clean dropdown on the entry form now,
+│                                  but classifyDecision() still does
+│                                  best-effort text matching, since older
+│                                  records saved before the dropdown
+│                                  existed have free-text values (e.g.
+│                                  "Rejected due to lack of appraisal
+│                                  knowledge") that still need bucketing
+├── js/cityLanguages.js            Firestore-backed city→language map
+│                                  (config/cityLanguages), with a
+│                                  hardcoded fallback table for the
+│                                  original 8 cities
+├── js/interviewRecordView.js      Renders one interview record's
+│                                  expanded detail view — shared between
+│                                  interview-city.html and
+│                                  interview-search.html
 └── js/exportInterviewExcel.js     Excel export styling/generation
 
 RENDERING HELPER (shared)
@@ -209,7 +255,8 @@ browsing history, exporting reports).
 ## Local development
 
 No build step. Just open `index.html` via a local server (not `file://`,
-since ES modules require http/https). For example:
+since ES modules require http/https) — this opens the workspace chooser;
+click through to either app from there. For example:
 
 ```bash
 npx serve .
@@ -465,7 +512,7 @@ so leaving it deployed is a live-write risk.
       native backups. Agreed fallback approach (not yet built): an
       "Export all data to Excel" button reading both collections and
       downloading via the same ExcelJS approach already used for reports
-- [ ] Both dashboards' overview pages (`index.html`, `interview.html`,
+- [ ] Both apps' overview pages (`calibration-home.html`, `interview.html`,
       `reports.html`, `interview-reports.html`) currently fetch their
       entire collection with no `limit()`/pagination — invisible at
       today's record counts (under 1,000 combined), but worth revisiting
@@ -475,6 +522,3 @@ so leaving it deployed is a live-write risk.
 - [ ] Firebase Auth roles are currently just "any @orocorp.in account" vs
       "Manager" (Settings access) — no separate auditor/interviewer role
       distinction if that's ever needed
-- [ ] `delete-calibration-record.mjs` at the repo root is a one-off script
-      for a specific already-deleted test record — safe to delete now
-      that it's served its purpose

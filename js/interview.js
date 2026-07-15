@@ -6,6 +6,12 @@ import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, classifyDe
 async function main() {
   await requireAuth();
 
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
   const listEl = document.getElementById("city-list");
   const cities = await getCities();
 
@@ -14,7 +20,7 @@ async function main() {
     row.href = `interview-city.html?city=${encodeURIComponent(city)}`;
     row.className = "city-row";
     row.innerHTML = `
-      <span class="name">${city}</span>
+      <span class="name">${escapeHtml(city)}</span>
       <span class="arrow">&rarr;</span>
     `;
     listEl.appendChild(row);

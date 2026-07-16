@@ -16,6 +16,7 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  getCountFromServer,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getAuth,
@@ -53,6 +54,6 @@ const auth = getAuth(app);
 await setPersistence(auth, browserSessionPersistence);
 
 export {
-  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove,
+  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, getCountFromServer,
   auth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
 };

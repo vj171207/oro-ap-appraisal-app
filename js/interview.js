@@ -1,7 +1,7 @@
 import { requireAuth } from "./authGuard.js";
 import { getCities } from "./cities.js";
-import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
-import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, classifyDecision } from "./interviewStats.js";
+import { db, collection, getDocs, query, where } from "./firebase-config.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates, classifyDecision } from "./interviewStats.js";
 
 async function main() {
   await requireAuth();
@@ -27,6 +27,26 @@ async function main() {
   });
 
   // ---- Overall dashboard (Total/Selected/Rejected/Selection Rate across every city) ----
+  //
+  // This used to fetch every interview_entries document in the whole
+  // collection on every load, regardless of the date range selected. It's
+  // NOT converted to count() aggregation the way calibration-home.js was:
+  // `round1Decision` is free text on legacy records (classifyDecision()
+  // exists specifically to correctly bucket older phrasings like "Ok for
+  // the next level" as Selected) — an equality-based count query would
+  // silently miscount exactly those legacy records again, the same bug
+  // already found and fixed once.
+  //
+  // Instead, the fetch itself is now narrowed to the selected date range
+  // via a server-side `where` on interviewDate, so the read cost tracks
+  // what's actually being viewed instead of the entire history — "All
+  // time" still reads everything, but any bounded range (e.g. "Last 3
+  // months") only reads that window. Classification logic is unchanged
+  // and still runs client-side on whatever comes back, so results are
+  // identical to before, just cheaper to produce for a bounded range.
+  //
+  // A single inequality filter on one field (interviewDate) never needs a
+  // composite index, so no Firestore Console setup is required for this.
 
   const statTotalEl = document.getElementById("stat-total");
   const statSelectedEl = document.getElementById("stat-selected");
@@ -48,16 +68,49 @@ async function main() {
     toDateInput.value = dates.to;
   });
 
-  let allRecords = [];
+  // Guards against a race: if the user changes filters and clicks Apply
+  // again before the first round trip finishes, only the most recent
+  // request is allowed to write to the stat elements.
+  let requestSeq = 0;
 
-  async function loadAllRecords() {
+  async function applyFilters() {
+    const from = fromDateInput.value;
+    const to = toDateInput.value;
+    const decisionFilter = decisionFilterSelect.value; // "all" | "Selected" | "Rejected"
+    const mySeq = ++requestSeq;
+
     try {
-      // Single-field orderBy — no composite index needed, same pattern as calibration's index.js.
-      const q = query(collection(db, "interview_entries"), orderBy("createdAt", "desc"));
+      const dateConstraints = [];
+      if (from) dateConstraints.push(where("interviewDate", ">=", from));
+      if (to) dateConstraints.push(where("interviewDate", "<=", to));
+
+      const q = query(collection(db, "interview_entries"), ...dateConstraints);
       const snapshot = await getDocs(q);
-      allRecords = [];
-      snapshot.forEach((docSnap) => allRecords.push(docSnap.data()));
-      applyFilters();
+      if (mySeq !== requestSeq) return; // superseded by a newer request
+
+      const records = [];
+      snapshot.forEach((docSnap) => records.push(docSnap.data()));
+
+      const total = records.length; // always the full date-range count — never narrowed by the Decision filter
+
+      let selectedCount, rejectedCount;
+
+      if (decisionFilter === "Selected") {
+        selectedCount = records.filter((d) => classifyDecision(d.round1Decision) === "Selected").length;
+        rejectedCount = 0;
+      } else if (decisionFilter === "Rejected") {
+        selectedCount = 0;
+        rejectedCount = records.filter((d) => classifyDecision(d.round1Decision) === "Rejected").length;
+      } else {
+        selectedCount = records.filter((d) => classifyDecision(d.round1Decision) === "Selected").length;
+        rejectedCount = records.filter((d) => classifyDecision(d.round1Decision) === "Rejected").length;
+      }
+
+      const selectionRate = total > 0 ? ((selectedCount / total) * 100).toFixed(1) : "—";
+      statTotalEl.textContent = total;
+      statSelectedEl.textContent = selectedCount;
+      statRejectedEl.textContent = rejectedCount;
+      statRateEl.textContent = selectionRate === "—" ? "—" : `${selectionRate}%`;
     } catch (err) {
       console.error(err);
       statTotalEl.textContent = "—";
@@ -67,34 +120,9 @@ async function main() {
     }
   }
 
-  function applyFilters() {
-    const dateFiltered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
-    const total = dateFiltered.length; // always the full date-range count — never narrowed by the Decision filter
-
-    const decisionFilter = decisionFilterSelect.value;
-    let selectedCount, rejectedCount;
-
-    if (decisionFilter === "Selected") {
-      selectedCount = dateFiltered.filter((d) => classifyDecision(d.round1Decision) === "Selected").length;
-      rejectedCount = 0;
-    } else if (decisionFilter === "Rejected") {
-      selectedCount = 0;
-      rejectedCount = dateFiltered.filter((d) => classifyDecision(d.round1Decision) === "Rejected").length;
-    } else {
-      selectedCount = dateFiltered.filter((d) => classifyDecision(d.round1Decision) === "Selected").length;
-      rejectedCount = dateFiltered.filter((d) => classifyDecision(d.round1Decision) === "Rejected").length;
-    }
-
-    const selectionRate = total > 0 ? ((selectedCount / total) * 100).toFixed(1) : "—";
-    statTotalEl.textContent = total;
-    statSelectedEl.textContent = selectedCount;
-    statRejectedEl.textContent = rejectedCount;
-    statRateEl.textContent = selectionRate === "—" ? "—" : `${selectionRate}%`;
-  }
-
   applyBtn.addEventListener("click", applyFilters);
 
-  loadAllRecords();
+  applyFilters();
 }
 
 main();

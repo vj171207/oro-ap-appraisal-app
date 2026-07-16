@@ -1,7 +1,7 @@
 import { requireAuth } from "./authGuard.js";
 import { getCities } from "./cities.js";
-import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
-import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow } from "./exportExcel.js";
+import { db, collection, query, where, getCountFromServer } from "./firebase-config.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates } from "./exportExcel.js";
 
 async function main() {
   await requireAuth();
@@ -27,6 +27,30 @@ async function main() {
   });
 
   // ---- All-cities dashboard (Total/Pass/Fail across every city) ----
+  //
+  // This used to fetch every calibration document in the whole collection
+  // on every load, then count Pass/Fail/date-window matches in JS. That
+  // read cost scaled with total historical record count, not with what's
+  // actually being displayed (four numbers).
+  //
+  // Now it uses Firestore's count() aggregation query instead — the server
+  // returns a match count without transferring the documents themselves.
+  // This is safe to do exactly because `result` is a strict Pass/Fail enum
+  // enforced by firestore.rules (see the calibrations `create` rule): an
+  // equality match on `result` can never disagree with what a full fetch
+  // would have counted, unlike AP Interview's free-text `round1Decision`
+  // field (see interview.js for why that one is handled differently).
+  //
+  // NOTE: combining a date-range filter (testDate) with a result-equality
+  // filter (result) in the same query requires a Firestore composite
+  // index. This has been created via Firebase Console:
+  //   Collection: calibrations
+  //   Fields: result (Ascending), testDate (Ascending)
+  // If this index is ever deleted, applying any date range together with
+  // the Pass/Fail dropdown will throw a "query requires an index" error
+  // with a direct Console link to recreate it — the fix is just clicking
+  // that link. Every other query shape used here (no filters, or a single
+  // filter alone) does not need this index at all.
 
   const statTotalEl = document.getElementById("stat-total");
   const statPassEl = document.getElementById("stat-pass");
@@ -48,16 +72,55 @@ async function main() {
     toDateInput.value = dates.to;
   });
 
-  let allRecords = [];
+  // Guards against a race: if the user changes filters and clicks Apply
+  // again before the first round trip finishes, only the most recent
+  // request is allowed to write to the stat elements.
+  let requestSeq = 0;
 
-  async function loadAllRecords() {
+  async function applyFilters() {
+    const from = fromDateInput.value;
+    const to = toDateInput.value;
+    const resultFilter = resultFilterSelect.value; // "all" | "Pass" | "Fail"
+    const mySeq = ++requestSeq;
+
     try {
-      // Single-field orderBy — no composite index needed, same pattern as reports.js.
-      const q = query(collection(db, "calibrations"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      allRecords = [];
-      snapshot.forEach((docSnap) => allRecords.push(docSnap.data()));
-      applyFilters();
+      const dateConstraints = [];
+      if (from) dateConstraints.push(where("testDate", ">=", from));
+      if (to) dateConstraints.push(where("testDate", "<=", to));
+
+      // Total is always the full date-range count, never narrowed by the
+      // Result dropdown — same rule the old client-side version followed.
+      const totalSnap = await getCountFromServer(
+        query(collection(db, "calibrations"), ...dateConstraints)
+      );
+      if (mySeq !== requestSeq) return; // superseded by a newer request
+
+      const total = totalSnap.data().count;
+
+      let passCount = 0;
+      let failCount = 0;
+
+      if (resultFilter !== "Fail") {
+        const passSnap = await getCountFromServer(
+          query(collection(db, "calibrations"), ...dateConstraints, where("result", "==", "Pass"))
+        );
+        if (mySeq !== requestSeq) return;
+        passCount = passSnap.data().count;
+      }
+
+      if (resultFilter !== "Pass") {
+        const failSnap = await getCountFromServer(
+          query(collection(db, "calibrations"), ...dateConstraints, where("result", "==", "Fail"))
+        );
+        if (mySeq !== requestSeq) return;
+        failCount = failSnap.data().count;
+      }
+
+      const clearance = total > 0 ? ((passCount / total) * 100).toFixed(1) : "—";
+      statTotalEl.textContent = total;
+      statPassEl.textContent = passCount;
+      statFailEl.textContent = failCount;
+      statClearanceEl.textContent = clearance === "—" ? "—" : `${clearance}%`;
     } catch (err) {
       console.error(err);
       statTotalEl.textContent = "—";
@@ -67,34 +130,9 @@ async function main() {
     }
   }
 
-  function applyFilters() {
-    const dateFiltered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
-    const total = dateFiltered.length; // always the full date-range count — never narrowed by the Result filter
-
-    const resultFilter = resultFilterSelect.value;
-    let passCount, failCount;
-
-    if (resultFilter === "Pass") {
-      passCount = dateFiltered.filter((d) => d.result === "Pass").length;
-      failCount = 0;
-    } else if (resultFilter === "Fail") {
-      passCount = 0;
-      failCount = dateFiltered.filter((d) => d.result === "Fail").length;
-    } else {
-      passCount = dateFiltered.filter((d) => d.result === "Pass").length;
-      failCount = dateFiltered.filter((d) => d.result === "Fail").length;
-    }
-
-    const clearance = total > 0 ? ((passCount / total) * 100).toFixed(1) : "—";
-    statTotalEl.textContent = total;
-    statPassEl.textContent = passCount;
-    statFailEl.textContent = failCount;
-    statClearanceEl.textContent = clearance === "—" ? "—" : `${clearance}%`;
-  }
-
   applyBtn.addEventListener("click", applyFilters);
 
-  loadAllRecords();
+  applyFilters();
 }
 
 main();

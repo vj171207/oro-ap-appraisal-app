@@ -1,6 +1,6 @@
 import { requireAuth } from "./authGuard.js";
-import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
-import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow, downloadMultiCityWorkbook } from "./exportExcel.js";
+import { db, collection, getDocs, query, where } from "./firebase-config.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates, downloadMultiCityWorkbook } from "./exportExcel.js";
 import { describeRange } from "./dateRangeUtils.js";
 
 async function main() {
@@ -16,42 +16,58 @@ async function main() {
     (opt) => `<option value="${opt.value}">${opt.label}</option>`
   ).join("");
 
-  quickRangeSelect.addEventListener("change", () => {
-    const dates = getQuickRangeDates(quickRangeSelect.value);
-    fromDateInput.value = dates.from;
-    toDateInput.value = dates.to;
-    updateSummary();
-  });
+  // This used to fetch every calibration record in the whole collection
+  // once on page load, then filter by date entirely in memory on every
+  // input change — meaning the read cost was the full history's size
+  // regardless of what range was ever actually selected.
+  //
+  // Now the date range itself is applied server-side (a `where` on
+  // testDate), and a fresh, narrower fetch runs each time the range
+  // changes. "All time" still reads everything — same as before — but
+  // any bounded range only ever reads what's actually being exported.
+  // `currentRecords` always holds exactly what matches the active range,
+  // so the export handler below no longer needs to filter anything itself.
 
-  let allRecords = [];
+  let currentRecords = [];
+  let requestSeq = 0;
 
-  async function loadAll() {
-    summaryLine.textContent = "Loading all calibration records…";
+  async function loadForCurrentRange() {
+    const from = fromDateInput.value;
+    const to = toDateInput.value;
+    const mySeq = ++requestSeq;
+
+    summaryLine.textContent = "Loading matching records…";
     try {
-      // No city filter here — this is a single-field orderBy, so it doesn't
-      // need a composite index the way city.js's city+createdAt query does.
-      const q = query(collection(db, "calibrations"), orderBy("createdAt", "desc"));
+      const dateConstraints = [];
+      if (from) dateConstraints.push(where("testDate", ">=", from));
+      if (to) dateConstraints.push(where("testDate", "<=", to));
+
+      const q = query(collection(db, "calibrations"), ...dateConstraints);
       const snapshot = await getDocs(q);
-      allRecords = [];
-      snapshot.forEach((docSnap) => allRecords.push(docSnap.data()));
-      updateSummary();
+      if (mySeq !== requestSeq) return; // superseded by a newer range change
+
+      currentRecords = [];
+      snapshot.forEach((docSnap) => currentRecords.push(docSnap.data()));
+      summaryLine.textContent = `${currentRecords.length} record${currentRecords.length === 1 ? "" : "s"} across all cities match this range.`;
     } catch (err) {
+      if (mySeq !== requestSeq) return;
       console.error(err);
       summaryLine.textContent = "Couldn't load records. Check your connection and reload.";
     }
   }
 
-  function updateSummary() {
-    const filtered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
-    summaryLine.textContent = `${filtered.length} record${filtered.length === 1 ? "" : "s"} across all cities match this range.`;
-  }
+  quickRangeSelect.addEventListener("change", () => {
+    const dates = getQuickRangeDates(quickRangeSelect.value);
+    fromDateInput.value = dates.from;
+    toDateInput.value = dates.to;
+    loadForCurrentRange();
+  });
 
-  fromDateInput.addEventListener("change", updateSummary);
-  toDateInput.addEventListener("change", updateSummary);
+  fromDateInput.addEventListener("change", loadForCurrentRange);
+  toDateInput.addEventListener("change", loadForCurrentRange);
 
   exportBtn.addEventListener("click", async () => {
-    const filtered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
-    if (filtered.length === 0) {
+    if (currentRecords.length === 0) {
       alert("No records match this date range — nothing to export.");
       return;
     }
@@ -65,13 +81,13 @@ async function main() {
     // a record always lands somewhere sensible, no matter what happened
     // to that city's entry in Settings afterward.
     const recordsByCity = {};
-    filtered.forEach((r) => {
+    currentRecords.forEach((r) => {
       const cityKey = r.city || "(No city)";
       if (!recordsByCity[cityKey]) recordsByCity[cityKey] = [];
       recordsByCity[cityKey].push(r);
     });
 
-    const sortedAll = [...filtered].sort((a, b) => {
+    const sortedAll = [...currentRecords].sort((a, b) => {
       const cityCompare = (a.city || "").localeCompare(b.city || "");
       if (cityCompare !== 0) return cityCompare;
       return (a.testDate || "").localeCompare(b.testDate || "");
@@ -95,7 +111,7 @@ async function main() {
     }
   });
 
-  loadAll();
+  loadForCurrentRange();
 }
 
 main();

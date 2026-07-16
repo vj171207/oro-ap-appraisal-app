@@ -1,6 +1,6 @@
 import { requireAuth } from "./authGuard.js";
-import { db, collection, getDocs, orderBy, query } from "./firebase-config.js";
-import { QUICK_RANGE_OPTIONS, getQuickRangeDates, filterByDateWindow } from "./interviewStats.js";
+import { db, collection, getDocs, query, where } from "./firebase-config.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates } from "./interviewStats.js";
 import { describeRange } from "./dateRangeUtils.js";
 import { downloadMultiCityInterviewWorkbook } from "./exportInterviewExcel.js";
 
@@ -17,42 +17,53 @@ async function main() {
     (opt) => `<option value="${opt.value}">${opt.label}</option>`
   ).join("");
 
-  quickRangeSelect.addEventListener("change", () => {
-    const dates = getQuickRangeDates(quickRangeSelect.value);
-    fromDateInput.value = dates.from;
-    toDateInput.value = dates.to;
-    updateSummary();
-  });
+  // Same fix as reports.js (calibration's all-cities report) — see that
+  // file for the full reasoning. The date range is now applied server-side
+  // via a `where` on interviewDate, and a fresh, narrower fetch runs each
+  // time the range changes, instead of fetching the whole interview_entries
+  // collection once and filtering it in memory forever. "All time" still
+  // reads everything; any bounded range only reads what's being exported.
 
-  let allRecords = [];
+  let currentRecords = [];
+  let requestSeq = 0;
 
-  async function loadAll() {
-    summaryLine.textContent = "Loading all interview records…";
+  async function loadForCurrentRange() {
+    const from = fromDateInput.value;
+    const to = toDateInput.value;
+    const mySeq = ++requestSeq;
+
+    summaryLine.textContent = "Loading matching records…";
     try {
-      // No city filter here — single-field orderBy, so no composite index
-      // needed the way interview-city.js's city+createdAt query does.
-      const q = query(collection(db, "interview_entries"), orderBy("createdAt", "desc"));
+      const dateConstraints = [];
+      if (from) dateConstraints.push(where("interviewDate", ">=", from));
+      if (to) dateConstraints.push(where("interviewDate", "<=", to));
+
+      const q = query(collection(db, "interview_entries"), ...dateConstraints);
       const snapshot = await getDocs(q);
-      allRecords = [];
-      snapshot.forEach((docSnap) => allRecords.push(docSnap.data()));
-      updateSummary();
+      if (mySeq !== requestSeq) return; // superseded by a newer range change
+
+      currentRecords = [];
+      snapshot.forEach((docSnap) => currentRecords.push(docSnap.data()));
+      summaryLine.textContent = `${currentRecords.length} record${currentRecords.length === 1 ? "" : "s"} across all cities match this range.`;
     } catch (err) {
+      if (mySeq !== requestSeq) return;
       console.error(err);
       summaryLine.textContent = "Couldn't load records. Check your connection and reload.";
     }
   }
 
-  function updateSummary() {
-    const filtered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
-    summaryLine.textContent = `${filtered.length} record${filtered.length === 1 ? "" : "s"} across all cities match this range.`;
-  }
+  quickRangeSelect.addEventListener("change", () => {
+    const dates = getQuickRangeDates(quickRangeSelect.value);
+    fromDateInput.value = dates.from;
+    toDateInput.value = dates.to;
+    loadForCurrentRange();
+  });
 
-  fromDateInput.addEventListener("change", updateSummary);
-  toDateInput.addEventListener("change", updateSummary);
+  fromDateInput.addEventListener("change", loadForCurrentRange);
+  toDateInput.addEventListener("change", loadForCurrentRange);
 
   exportBtn.addEventListener("click", async () => {
-    const filtered = filterByDateWindow(allRecords, fromDateInput.value, toDateInput.value);
-    if (filtered.length === 0) {
+    if (currentRecords.length === 0) {
       alert("No records match this date range — nothing to export.");
       return;
     }
@@ -63,13 +74,13 @@ async function main() {
     // vanish from every per-city sheet here, though it stays visible in
     // Firestore and in the "Overall" sheet below).
     const recordsByCity = {};
-    filtered.forEach((r) => {
+    currentRecords.forEach((r) => {
       const cityKey = r.city || "(No city)";
       if (!recordsByCity[cityKey]) recordsByCity[cityKey] = [];
       recordsByCity[cityKey].push(r);
     });
 
-    const sortedAll = [...filtered].sort((a, b) => {
+    const sortedAll = [...currentRecords].sort((a, b) => {
       const cityCompare = (a.city || "").localeCompare(b.city || "");
       if (cityCompare !== 0) return cityCompare;
       return (a.interviewDate || "").localeCompare(b.interviewDate || "");
@@ -93,7 +104,7 @@ async function main() {
     }
   });
 
-  loadAll();
+  loadForCurrentRange();
 }
 
 main();

@@ -1,524 +1,134 @@
-# Oro AP Appraisal App
-
-Two related but independent tools for Oro's Lending Services Audit team,
-sharing one Firebase project, one Vercel deployment, and a small set of
-common infrastructure (auth, city list, toasts):
-
-- **AP Appraisal Calibration** — quarterly gold-purity calibration testing
-  of Appraisal Partners (APs), replacing the manual Google Sheet process.
-- **AP Interview** — tracking candidate interview results during AP hiring.
-
-They're two separate workspaces from the person's point of view (see
-`index.html`, the workspace chooser), each with its own city dashboards,
-entry forms, reports, and Settings page — but genuinely two apps, not one
-app with a mode switch. "Shared" below means literally shared code/data,
-not just similar-looking.
-
-## AP Appraisal Calibration
-
-A web app for Oro's Lending Services Audit team to run and record quarterly
-Appraisal Partner (AP) calibration tests, replacing the manual Google Sheet
-process.
-
-### What this app does
-
-Each quarter, an auditor visits a branch in a city and tests each Appraisal
-Partner (AP) there using 5 gold "needles" of known purity. The AP appraises
-each needle and the auditor records what the AP says. This app:
-
-- Lets the auditor pick a city, then start a new calibration session for an AP
-- Auto-calculates the score for each needle (no manual 0/1/2 dropdown)
-- Auto-calculates the total score and Pass/Fail result
-- Enforces the SOP's hard auto-fail rule (see below) — it cannot be
-  overridden by a high score
-- Stores every session in Firestore and shows a per-city history
-
-### Scoring rules (from the Oro AP Calibration SOP)
-
-Per needle, comparing the **known karat** (`given`) to what the **AP reported**
-(`answer`):
-
-| Condition | Score | Auto-fail? |
-|---|---|---|
-| Exact match | 2 | No |
-| Off by 1 karat (both normal karats) | 1 | No |
-| Off by 2+ karats (both normal karats) | 0 | No |
-| Known = "Below 18K", AP says a normal karat | 0 | **Yes** — AP missed a genuinely sub-18K item |
-| AP says "Below 18K", known is a normal karat | 0 | No — false alarm, not a missed detection |
-
-**Overall result:**
-- Total score = sum of all 5 needle scores (max 10)
-- **Pass** requires total score ≥ 7 **and** no auto-fail triggered
-- **Fail** if total score ≤ 6, **or** if any needle triggered auto-fail —
-  regardless of total score
-
-All of this logic lives in `js/scoring.js` as pure functions, independent of
-Firestore or the UI, so it can be tested or audited on its own.
-
-## Project structure
-
-No build step, no bundler — every file below is served as-is. Grouped by
-which app(s) actually use it, since that's the useful question when you're
-trying to find where something lives.
-
-```
-SHARED (used by both apps)
-├── index.html                    Workspace chooser (landing page) — pick
-│                                  AP Calibration or AP Interview. Small
-│                                  inline script (just requireAuth()), no
-│                                  separate js/ file of its own
-├── login.html + js/login.js      Sign-in form (domain-restricted)
-├── css/styles.css                All styling, both apps
-├── js/authGuard.js                Auth check + user-bar + Settings-link
-│                                  routing, imported at the top of every
-│                                  other page's script
-├── js/firebase-config.js          Firebase app + Firestore init
-├── js/toast.js                    Toast notifications + global error
-│                                  reporting (catches uncaught errors so
-│                                  they're visible on-screen, not just in
-│                                  DevTools)
-├── js/cities.js                   Reads config/cities from Firestore
-│                                  (shared list — a city added here shows
-│                                  up in BOTH apps)
-├── js/citySettings.js             "Add a city" UI logic, used by both
-│                                  settings pages
-└── js/dateRangeUtils.js           Pure date-range math (Quick Range
-                                   presets, From/To filtering) — the one
-                                   piece of filter logic that really is
-                                   identical between the two apps
-
-AP APPRAISAL CALIBRATION
-├── calibration-home.html + js/calibration-home.js
-│                                  City selection + all-cities stats
-│                                  dashboard (was index.html/js/index.js
-│                                  before index.html became the shared
-│                                  workspace chooser above)
-├── city.html + js/city.js         One city's calibration history +
-│                                  "New calibration" button
-├── calibration.html + js/calibration.js
-│                                  New calibration entry form (5 needles)
-├── reports.html + js/reports.js   All-cities Excel report
-├── search.html + js/search.js     Cross-city search by AP name or
-│                                  employee code
-├── settings-calibration.html + js/settings-calibration.js
-│                                  Auditor roster management + city list
-│                                  (city list section delegates to the
-│                                  shared js/citySettings.js)
-├── js/scoring.js                  Scoring rules — pure functions, no
-│                                  dependencies (see below)
-├── js/needleUI.js                 Shared needle-scoring visual helpers
-│                                  (karat strip, given/answer selects) —
-│                                  also used by AP Interview's practical
-│                                  score popup, so both use the exact same
-│                                  rendering code
-├── js/auditorList.js              Fetches config/auditors — also used by
-│                                  AP Interview's Round 1 Interviewer
-│                                  dropdown (same roster, one source)
-├── js/calibrationRecordView.js    Renders one calibration record's
-│                                  expanded detail view — shared between
-│                                  city.html and search.html so both show
-│                                  identical detail
-└── js/exportExcel.js               Excel export styling/generation
-
-AP INTERVIEW
-├── interview.html + js/interview.js
-│                                  City selection + overall dashboard
-├── interview-city.html + js/interview-city.js
-│                                  One city's interview history +
-│                                  "New Interview" button
-├── interview-entry.html + js/interview-entry.js
-│                                  New interview entry form
-├── interview-reports.html + js/interview-reports.js
-│                                  All-cities Excel report
-├── interview-search.html + js/interview-search.js
-│                                  Cross-city search by candidate name
-├── settings-interview.html + js/settings-interview.js
-│                                  City list (delegates to the shared
-│                                  js/citySettings.js) + a Local Languages
-│                                  section (interview-only — sets which
-│                                  language each city's "Local Language
-│                                  Proficiency" field asks about; NOT
-│                                  shared with AP Calibration, since
-│                                  language isn't a calibration concept).
-│                                  No separate interviewer roster of its
-│                                  own — Round 1 Interviewer reuses AP
-│                                  Calibration's auditor roster (see
-│                                  js/auditorList.js above)
-├── js/interviewStats.js           Decision classification (Selected/
-│                                  Rejected) + re-exports the shared
-│                                  date-range helpers. Round 1 Decision is
-│                                  a clean dropdown on the entry form now,
-│                                  but classifyDecision() still does
-│                                  best-effort text matching, since older
-│                                  records saved before the dropdown
-│                                  existed have free-text values (e.g.
-│                                  "Rejected due to lack of appraisal
-│                                  knowledge") that still need bucketing
-├── js/cityLanguages.js            Firestore-backed city→language map
-│                                  (config/cityLanguages), with a
-│                                  hardcoded fallback table for the
-│                                  original 8 cities
-├── js/interviewRecordView.js      Renders one interview record's
-│                                  expanded detail view — shared between
-│                                  interview-city.html and
-│                                  interview-search.html
-└── js/exportInterviewExcel.js     Excel export styling/generation
-
-RENDERING HELPER (shared)
-└── js/domReconcile.js             Keeps city-history list DOM nodes
-                                   across filter changes instead of
-                                   wiping and rebuilding everything —
-                                   used by both city.js and
-                                   interview-city.js
-
-BACKEND (Vercel serverless functions + Admin SDK)
-├── api/create-user.js              Creates a Firebase Auth user (used
-│                                    when adding an auditor)
-├── api/remove-auditor.js           Removes an auditor's Firebase Auth
-│                                    account
-└── lib/firebaseAdminHelpers.js     Shared JWT-signing/token logic for
-                                     the two functions above
-
-firestore.rules                     Security rules for BOTH apps' Firestore
-                                     collections — calibrations,
-                                     interview_entries, appraisal_partners,
-                                     config/*
-vercel.json                         cleanUrls: true — this is why URLs in
-                                     the browser show as e.g. /interview
-                                     rather than /interview.html
-```
-
-### Data model (Firestore)
-
-Single collection: `calibrations`. One document = one AP's one quarterly test.
-
-```js
-{
-  city: "Chennai",
-  testDate: "2024-03-15",         // built from Day/Month/Year dropdowns
-  monthYearLabel: "Mar 2024",     // for display and quarter grouping
-  auditorName: "Arun Mathiyazhagan",
-  auditorEmpCode: "ORO00320",
-  apName: "K Manikandan",
-  apEmpCode: "ORO00020",
-  apDoj: "2021-02-04",
-  needles: [
-    { given: "21K", answer: "20K", score: 1 },
-    // ...5 total
-  ],
-  totalScore: 7,
-  autoFailTriggered: false,
-  result: "Pass",
-  remarks: "",
-  createdAt: <Firestore server timestamp>
-}
-```
-
-No `appraisal_partners` master-data collection yet — AP name/code/DOJ are
-entered manually on each session for now. This is a known gap, tracked for a
-future update once we know where AP master data actually lives.
-
-## Auth
-
-Firebase Auth (email/password), gated to `@orocorp.in` addresses only —
-enforced in three overlapping places, not just one:
-
-1. **`login.html`/`js/login.js`** — the sign-in form itself checks the
-   domain before letting a successful Firebase sign-in through
-2. **`js/authGuard.js`** — every page in both apps calls `requireAuth()` at
-   the top of its own script, which re-checks the domain and bounces to
-   `login.html` if it's not signed in or not an allowed domain. Also
-   forces a fresh sign-in on an actual browser refresh (F5) specifically —
-   normal in-app navigation (clicking a link) does NOT re-trigger this,
-   only a literal reload
-3. **`firestore.rules`** — the real enforcement layer; even if someone
-   bypassed both of the above (e.g. by calling Firestore directly), every
-   read/write still requires `request.auth.token.email` to match
-   `@orocorp.in`
-
-**Managers** (a Firestore-managed allowlist, `config/managers`) get an
-additional "⚙ Settings" link — see "Managing the city list" below. This is
-authorization on top of the authentication above, not a replacement for it.
-
-There's no separate "auditor" vs "manager" *role* beyond that one
-Settings-access distinction — anyone with a valid @orocorp.in account can
-use either app's main features (entering calibrations/interviews,
-browsing history, exporting reports).
-
-## Tech stack
-
-- Plain HTML/CSS/JS (no build step, no framework)
-- Firebase Firestore (via the modular v10 SDK, loaded from CDN — no npm
-  install needed)
-- Hosted on Vercel as a static site
-
-## Local development
-
-No build step. Just open `index.html` via a local server (not `file://`,
-since ES modules require http/https) — this opens the workspace chooser;
-click through to either app from there. For example:
-
-```bash
-npx serve .
-```
-
-## Deploying
-
-Push to the `main` branch on GitHub — if connected to Vercel, it will
-auto-deploy. If Vercel is caching a stale `app.js`/JS bundle after a push,
-the reliable fix (per the Tenmark Audit App's experience) is a manual
-drag-and-drop re-upload of the changed files via the GitHub web UI, followed
-by a hard-refresh/incognito check in the browser.
-
-### AP roster lookup (Employee Code → Name/DOJ autofill)
-
-The AP master roster lives in a separate Google Sheet ("Current list of
-Appraisal Partners," tab "AP Details") maintained outside this app. Rather
-than calling that sheet live from the app, it's kept in sync one-way into a
-Firestore collection, `appraisal_partners` (document ID = Employee Code):
-
-```
-Google Sheet ("AP Details" tab)
-      │  Apps Script (apps-script/Code.gs, lives IN the sheet, not this repo)
-      │  — runs on every edit, plus a manual "fullSync" as a safety net
-      ▼
-Firestore: appraisal_partners/{empCode}
-      │  read directly by the app (no backend, no API call at request time)
-      ▼
-calibration.html — auditor types an Employee Code, Name + DOJ autofill
-```
-
-`apps-script/Code.gs` in this repo is a **copy for documentation/handover
-purposes only** — it does not run as part of the deployed app. The real copy
-lives inside the Google Sheet itself (Extensions → Apps Script). See the
-comment block at the top of that file for full one-time setup steps
-(service account, Script Properties, triggers).
-
-Name and DOJ remain editable after autofill — if the roster is stale or the
-lookup misses, the auditor can still type them in manually.
-
-### ⚠️ Handover note: transferring this before the intern's account is deactivated
-
-The sync code lives in the Sheet's bound Apps Script project and isn't tied
-to any one person. But the **installable `onSheetEdit` trigger** runs under
-whichever Google account created it — so once that account is deactivated,
-the trigger silently stops firing (the Sheet keeps working fine; Firestore
-just stops receiving updates, with no visible error to anyone editing the
-Sheet).
-
-**Before the outgoing intern's account is deactivated:**
-
-1. Give the incoming owner **Editor access** to the AP roster Sheet (any
-   Google account works, doesn't need to be on the same Workspace domain)
-2. They open the Sheet → **Extensions → Apps Script** — the code is already
-   there, nothing to re-paste or reconfigure
-3. They create their **own** trigger: clock icon → **Add Trigger** →
-   function `onSheetEdit` → **From spreadsheet** → **On edit** → **Save**,
-   approving the permissions prompt under their own login
-4. Test it: edit a row in the Sheet, confirm the change lands in the
-   `appraisal_partners` Firestore collection within a few seconds
-5. Optionally delete the old trigger for tidiness (not urgent)
-
-**Do NOT need to be redone:** the Script Properties (service account
-email/key, Firestore project ID) — those belong to the script project
-itself, not to any individual's account.
-
-Do this a few days before the handoff, not on the last day, so there's time
-to verify it actually works while the outgoing person can still help debug.
-
-### Excel export / reports
-
-Two ways to export calibration data as a styled `.xlsx` file, both using
-**ExcelJS** (loaded via CDN) — not SheetJS, whose free build can't write
-cell colors/fonts at all:
-
-- **Per-city export** (on each city page): filter by Result (All/Pass/Fail)
-  and Date range (all time / last 3-6-12 months / current or previous
-  calendar quarter), click **Apply**, then **Export to Excel** — exports
-  exactly what's currently shown.
-- **All-Cities Report** (`reports.html`, linked from the landing page):
-  same date-range filter, but produces one workbook with an **"Overall"**
-  sheet (every city, sorted by city then date) plus a separate tab per
-  city — matching the original spreadsheet's structure.
-
-Column layout matches the original AP Calibration Google Sheet's headers
-exactly (SL, Month & Year, Test Result, Score, Needle 1-5 Given/Answer/
-Score, etc.), so it should look familiar to anyone who's received the old
-manually-built reports. Styling logic lives in `js/exportExcel.js`, shared
-by both `city.js` and `reports.js`.
-
-## Managing the city list (Settings page)
-
-The city list is shared between both apps — it's one Firestore document,
-`config/cities`, read by both `js/cities.js` (calibration) and the
-interview app's city pickers. There are two separate Settings pages now
-(`settings-calibration.html` and `settings-interview.html` — see
-"AP Interview" below for why), but "Add a city" on either one calls the
-same shared code (`js/citySettings.js`) against the same document, so a
-city added from either page immediately appears in both apps.
-
-The city list used to be hardcoded in `js/cities.js`. It's now stored in
-Firestore (`config/cities`, field `list`), editable from an in-app
-**Settings** page — visible only to Managers (see below). `js/cities.js`
-still exists, but now just fetches from Firestore, with a hardcoded
-fallback list in case that document doesn't exist yet.
-
-**One-time setup required** (do this once, in the Firebase Console, before
-this feature works):
-
-1. Go to `Firestore Database → Data`
-2. Create a collection called `config`
-3. Inside it, create a document with ID `cities`, with one field:
-   - `list` (array of strings) — seed it with the current 8 cities:
-     `Chennai, Bengaluru, Hyderabad, Pune, Vijayawada, Guntur, Warangal, Karimnagar`
-4. Create a second document with ID `managers`, with one field:
-   - `emails` (array of strings) — **must be lowercase** — currently:
-     `vibhav.j@orocorp.in, rijin.c@orocorp.in`
-
-Both documents are readable by any signed-in Oro user, but only writable
-under specific conditions (see `firestore.rules`): `config/cities` can only
-be written by someone whose email appears in `config/managers`; the
-`config/managers` document itself can't be written from the app at all — to
-add or remove a Manager, edit that document directly in the Firebase
-Console.
-
-**Why managers, not custom claims/roles:** Firebase custom claims need a
-Cloud Function to set, which requires the paid Blaze plan. Looking up a
-plain Firestore document from within the security rules (`isManager()` in
-`firestore.rules`) achieves the same access control for free.
-
-**Adding a city:** critical requirement — the spelling must **exactly**
-match how that city appears in the AP roster sheet's Location column.
-Everything (AP lookups, calibration filtering, reports) matches on this
-string exactly; a casing or spelling mismatch will silently produce a
-"phantom" city with no data, or fail AP lookups for that city.
-
-### Managing the auditor list (Settings page)
-
-The "Audit Official Name" field on the calibration form used to be free
-text. It's now a dropdown, populated from `config/auditors` (field `list`,
-an array of `{name, empCode}` objects) — also managed from the Settings
-page, same Manager-only access as the city list. Selecting a name
-auto-fills their Employee Code (which remains editable, in case it's
-wrong or out of date, same philosophy as the AP lookup).
-
-**One-time setup:** create a document with ID `auditors` inside the
-`config` collection (same collection as `cities` and `managers` above),
-with one field:
-- `list` (array of maps) — each entry needs both `name` and `empCode`
-  fields. Can start empty — Settings can add the first entries once this
-  document exists.
-
-Settings checks for both a duplicate name and a duplicate employee code
-before adding a new auditor, to catch accidental double-entry.
-
-## AP Interview
-
-Tracks candidate interview results during AP hiring — auditors manually
-enter results per candidate (no live data pulled from anywhere else); this
-was deliberately built simple.
-
-### What this app does
-
-- City selection → per-city interview history + a "New Interview" button
-- Entry form covering candidate details, appraisal scores, language/English
-  proficiency, and Round 1 Decision (free text, not a fixed
-  Selected/Rejected field — real-world remarks vary too much, e.g.
-  "Rejected due to lack of appraisal knowledge")
-- Both an overall (all-cities) and per-city dashboard: Total / Selected /
-  Rejected / Selection Rate, with the same Quick Range + From/To date
-  filtering as calibration
-- Excel export, per-city and all-cities — same ExcelJS-based styling
-  approach as calibration's reports, via `js/exportInterviewExcel.js`
-
-### Data model (Firestore)
-
-Single collection: `interview_entries`. One document = one candidate's one
-interview record.
-
-```js
-{
-  city: "Chennai",
-  interviewDate: "2026-07-12",
-  candidateName: "Manikandan R",
-  locationDetail: "",              // e.g. "PCMC" when the candidate's actual
-                                    // location differs from the city itself;
-                                    // blank is correct when it doesn't
-  company: "Muthoot Finance",
-  role: "AP",
-  age: 28,
-  experience: "2 Years",
-  bikeAvailable: "Yes",            // "Yes" | "No"
-  dlAvailable: "Yes - DL",         // "Yes - DL" | "Yes - LLR" | "No"
-  scoreTheory: 3,                  // out of 4
-  scorePractical: 5,               // out of 6
-  totalScore: 8,                   // manual entry, NOT auto-summed —
-                                    // unlike calibration's needle scoring
-  localLanguage: "Tamil",          // derived from city, not user-entered
-  localLanguageProficiency: "Good",
-  englishProficiency: "Average",
-  round1Decision: "Selected",      // free text — see classifyDecision()
-                                    // in js/interviewStats.js for how this
-                                    // gets bucketed into Selected/Rejected/
-                                    // Other for the dashboards
-  interviewer: "Rijin C",
-  remarks: "",
-  createdAt: <Firestore server timestamp>
-}
-```
-
-Every field except Remarks and Location (optional detail) is mandatory —
-enforced via a red toast listing everything still missing, not native
-browser validation. Same pattern in calibration's form. To remove this
-requirement later, each of `js/calibration.js` and `js/interview-entry.js`
-has one `const ENFORCE_ALL_FIELDS_REQUIRED = true;` near the top — flip to
-`false`, nothing else needs to change.
-
-### Why Round 1 Decision is free text, not a dropdown
-
-The source spreadsheet this replaced had wildly inconsistent phrasing
-("Selected", "Rejected due to lack of appraisal knowledge", "Not
-Selected", "Ok for the next level"). Rather than force it into a fixed
-enum and lose that nuance, it stays free text, and `classifyDecision()` in
-`js/interviewStats.js` does best-effort bucketing for the dashboards: it
-checks for "not selected"/"reject" before the generic "select" match
-(so "Not Selected" correctly lands as Rejected, not Selected), and
-anything that matches neither pattern falls into "Other" rather than being
-guessed at.
-
-### Historical data import
-
-159 historical records were imported from the original Excel tracker
-(8 city tabs) in one one-time run. The import script has already been
-deleted from the repo (same pattern as calibration's original 789-record
-import) — if a similar one-time import is ever needed again, it followed
-this general shape: transform the source spreadsheet into a JSON file
-matching the schema above, build a small admin-only HTML page that reads
-that JSON and writes to Firestore with `addDoc`, run it once, verify the
-data in the app, then delete the import page/script/JSON from the repo
-immediately — it has no auth of its own beyond needing a valid session,
-so leaving it deployed is a live-write risk.
-
-## Known gaps / next steps
-
-- [ ] Automatic "2 consecutive quarter fails → PIP" flagging across a city's
-      history
-- [ ] AP roster sync currently one-way (Sheet → Firestore); if a lookup
-      shows stale data, the fix is in the Sheet, not the app
-- [ ] Retention policy undecided — how long calibration/interview records
-      should be kept, whether AP roster edit history matters, whether an
-      offline export is needed before any deletion
-- [ ] No automated Firestore backups — the free Spark plan doesn't support
-      native backups. Agreed fallback approach (not yet built): an
-      "Export all data to Excel" button reading both collections and
-      downloading via the same ExcelJS approach already used for reports
-- [ ] Both apps' overview pages (`calibration-home.html`, `interview.html`,
-      `reports.html`, `interview-reports.html`) currently fetch their
-      entire collection with no `limit()`/pagination — invisible at
-      today's record counts (under 1,000 combined), but worth revisiting
-      once either collection is in the thousands. The per-city pages
-      (`city.html`, `interview-city.html`) already scope their reads to
-      one city, which helps, but still has no ceiling
-- [ ] Firebase Auth roles are currently just "any @orocorp.in account" vs
-      "Manager" (Settings access) — no separate auditor/interviewer role
-      distinction if that's ever needed
+# Oro Audit App
+
+Internal collateral audit tool for Oro's audit team, built for Tenmark Capital (TCPL). Sole developer: VJ (intern). Technical handover owner from end of July 2026: Vivek. Manager: Rijin C.
+
+## Live app
+
+- **URL:** oro-audit-app.vercel.app
+- **Hosting:** Vercel (primary and only supported deployment target)
+- **GitHub:** github.com/vj171207/oro-audit-app
+
+## Architecture
+
+| Layer | Technology |
+|---|---|
+| Frontend | Plain HTML/CSS/JS — `index.html`, `style.css`, `app.js`. No framework, no build step. |
+| Auth | Firebase Authentication (email/password + anonymous for guest access) |
+| Database | Firebase Firestore (project: `oro-audit`, Spark/free plan) |
+| Live loan data | Metabase (`oro.metabaseapp.com`), Tenmark Prod, database ID 103 |
+| Exports | SheetJS (`xlsx.full.min.js`, loaded via CDN) for `.xlsx` export |
+| Serverless functions | Vercel `/api` functions (Node) — **Hobby plan caps this at 12 functions per deployment.** Keep an eye on the `api/` folder count; this limit has been hit twice already from leftover one-time scripts not being deleted promptly. |
+| Scheduled sync | Vercel Cron, daily at 3:30 AM UTC (9:00 AM IST) |
+
+**Data flow:** Metabase is the source of truth for live loan status and is **read-only** from this app's perspective. Firestore is the source of truth for everything the audit team enters (audit records, tare weights, settings, users). The daily cron job (`api/sync-loans.js`) pulls active loans from Metabase and adds any new ones to Firestore as pending audits — it never writes back to Metabase.
+
+## What the app does
+
+**1. New Audit** — Shows active Tenmark loans that have never been audited (pulled from Metabase, cross-referenced against Firestore). Auditor selects a loan, ops data (ornament weights, karat, hallmark, etc.) auto-populates, auditor records findings and tare weight, submits to Firestore.
+
+If a loan has been audited before (a genuine re-audit), the ornament form pre-fills each field with the previous audit's values as a reference, clearly labeled and fully editable — the auditor still physically re-measures, this is a comparison aid, not an autofill shortcut. See **"The re-audit reference system"** below for how this actually works and why it's more subtle than it looks.
+
+**2. Tare Weight** — Ledger of tare weight readings against active loans, with a configurable mismatch threshold (default 0.3g). Filterable by branch and match/pending/flagged status. Shows a live "X remaining today / X completed today" counter so auditors always know exactly how much of the day's queue is left, without needing to track it manually.
+
+**3. All Audits** — Full audit history, deduplicated per loan. Filterable by loan ID, branch, auditor, deviation type, loan status, and date range. Loan ID search always searches the complete history regardless of what's currently displayed. The table shows the most recent 100 audits by default with a "Load more" button — see **"Performance: why two different fixes"** below for why this works differently from Tare Weight's fix.
+
+**4. Settings** (password-protected, managers only) — Configure pending-audit cycle length and tare weight threshold, manage users and their roles, register branches, view app-level stats (sync status, audit counts).
+
+### Roles
+
+- **Manager** — full access, including Settings and audit date editing.
+- **Auditor** — everything except Settings and the locked audit-date field.
+- **Guest** — read-only, signs in anonymously via Firebase Auth (required so Firestore rules can enforce `request.auth != null` on every read — guests are not literally unauthenticated), banner shown at top of screen.
+
+## Environment variables (set in Vercel project settings)
+
+| Variable | Purpose |
+|---|---|
+| `METABASE_SESSION_TOKEN` | Auth for all Metabase queries. **This is a session token copied from a browser cookie and will expire periodically** — see maintenance notes below for the permanent fix that's been scoped but not yet built. |
+| `FIREBASE_API_KEY` | Firebase Auth REST API key (used server-side in `/api` functions for admin-style operations) |
+| `FIREBASE_SYNC_EMAIL` / `FIREBASE_SYNC_PASSWORD` | Credentials for a dedicated Firebase service account used by the cron sync, user creation, password reset, and user removal functions to obtain an auth token. **This is the only account permitted to write to the `users` collection** — see the Firestore Security Rules note below, this is not optional/legacy, it's load-bearing. |
+| `CRON_SECRET` | Shared secret checked by `api/sync-loans.js` to ensure only Vercel's own cron trigger can call it |
+| `BACKFILL_SECRET` | Historically used to gate one-time data-migration scripts (see "One-time data fixes" below). No currently-active script uses this, but the pattern is documented there in case a future migration is ever needed — don't remove this env var casually, and don't be surprised if it's referenced again someday. |
+
+The Firebase web `apiKey` used client-side in `app.js` is intentionally public (standard for Firebase — access is controlled by Firestore security rules, not by hiding the key).
+
+## Files
+
+- `index.html` — App structure and markup for all four sections, login screen, and modals
+- `style.css` — All styling, including light/dark mode theming via CSS variables
+- `app.js` — All client-side logic: Firebase init, auth, Firestore reads/writes, rendering, exports
+- `api/active-loans.js` — Fetches all currently active loans from Metabase
+- `api/browse-loans.js` — Fetches loans within a date range from Metabase
+- `api/loan-lookup.js` — Fetches ops data (including ornament detail) for a single loan ID from Metabase
+- `api/tw-gross-weight.js` — Batched, scale-safe endpoint returning total gross weight per loan for the Tare Weight report (see the Pledge Card note below before touching the SQL in here)
+- `api/sync-loans.js` — Cron job: pulls active loans from Metabase, adds new ones to Firestore, updates last-sync timestamp
+- `api/create-user.js` — Creates a Firebase Auth user + Firestore user record (Settings panel, managers only)
+- `api/reset-password.js` — Resets another user's password via Firebase Auth (Settings panel, managers only)
+- `api/remove-user.js` — Removes a user's Firestore access record (Settings panel, managers only). Revokes app access immediately; does **not** delete the underlying Firebase Auth account — that's a deliberate scope decision, not an oversight.
+- `vercel.json` — API routing rewrites and the cron schedule
+- `netlify.toml` — Currently empty. Kept only as a placeholder in case the app is ever redeployed to Netlify instead of Vercel; has no effect on the current Vercel deployment.
+- `tests/` — A handful of saved, runnable test scripts covering the trickiest logic in the app. See `tests/README.md`. Not exhaustive, not a formal test suite with a runner — just real, working checks against the pieces of logic that were genuinely non-obvious to get right, kept so future changes don't silently re-break them.
+
+## Hard-won domain knowledge
+
+This section exists because most of these facts aren't visible from reading the code alone — each one caused a real bug at some point before it was understood.
+
+### "Gross weight" is a Pledge Card total, not a per-piece figure
+
+`GW` on any ornament (in Metabase, in Firestore, in the app's UI) is the **total weight for that line item as recorded on the Pledge Card** — not the weight of one individual piece. If an ornament line says count = 2, its GW is already the combined weight of both pieces, **not** a per-piece figure that needs multiplying. This directly caused a bug in the Gross Weight report column (originally built as `gross_weight × quantity`, which double-counted every multi-piece ornament) before being caught and fixed. Any future code touching ornament weights should sum `gw` directly, never multiply by count.
+
+### Every loan has (at least) two copies of its gold records — only one is authoritative
+
+Metabase's `gold` table stores **both** the Appraisal Partner's (AP) original valuation and the Maker's independent re-verification of the same physical items, as two separate rows. The Maker's row always has `original_gold_id` pointing back to the AP row it corresponds to. **Any query touching the `gold` table must filter `original_gold_id IS NULL`** to get only the authoritative AP records — omitting this filter causes every multi-piece loan to appear to have double the ornaments it actually has. This is already correctly handled in `api/loan-lookup.js` and `api/tw-gross-weight.js`; if you ever write a new query against `gold`, copy this filter from one of those files rather than writing it from scratch.
+
+### Ornament type names in Metabase can silently change over time
+
+At least one real case: a type recorded as `"Stud"` on an old audit is now called `"Studs"` in Metabase's current `gold_ornament` table (and there are other similarly-named categories like `"Drops & Studs"` vs `"Stud & Drops"` — easy territory for this to happen again). This broke the re-audit reference system's matching until it was found and fixed — see the next section for how the fix actually works.
+
+### The re-audit reference system
+
+When a loan gets audited a second time, the app tries to show what was recorded last time as a reference (never as a silent autofill without the auditor seeing it). This is genuinely subtler than it looks, because of two compounding problems: (1) old records didn't originally store which specific physical item (Metabase's `gold.id`) they corresponded to, and (2) even the item's *type name* isn't reliably stable over time (see above).
+
+The matching logic (`matchPreviousOrnament()` in `app.js`) tries, in order:
+1. **Exact match by `goldId`** — the reliable case, works regardless of any type-name drift. Every audit submitted from mid-project onward captures this at the time of audit, so this case gets more common over time and needs no further work.
+2. **Unambiguous match by type name** — for older records with no `goldId` stored: if only one past entry shares this type name, there's nothing actually ambiguous about it, safe to use.
+3. **Match by recorded weight, across all types** — the fallback for when a type name has drifted (case above): if no past entry shares the current type name at all, but exactly one shares the recorded Pledge Card weight, that's treated as a genuine re-identification, not a guess, and labeled honestly ("recorded as X last time, now Y").
+4. **If none of the above resolve to exactly one candidate** — genuinely ambiguous (e.g. two same-type ornaments with no `goldId` and no distinguishing weight). The app **deliberately does not guess** here — it shows all candidates as a labeled reference list and leaves the fields blank, rather than risk silently feeding a wrong number into an audit. A one-time backfill pass (already run) retroactively resolved most of the historical gap using this same weight-matching logic; a small number of genuinely unresolvable cases remain by design, not oversight — they're unresolvable because the original data never recorded which physical item was which, not because the matching logic is incomplete.
+
+### Performance: why two different fixes, not one
+
+**Tare Weight** only ever needs to show *currently active* loans (~150 today, out of 500+ total audits ever recorded). It was rewritten to fetch only the audit records for those active loans (batched Firestore `in` queries, 30 IDs per batch — a hard Firestore limit), merged into the shared in-memory store rather than replacing it. This is a genuine reduction in what gets read from the database, and the saving grows every year as total history accumulates while active loan count stays roughly flat.
+
+**All Audits** is different, deliberately: its summary cards (Total/Excess/Spurious/Active) need to count *the most recent audit per loan*, which requires looking at the full history to correctly deduplicate (a loan can have more than one audit doc — see the AP/Maker note above for why duplicates are common in this data, not rare). So the underlying full-history fetch was kept **on purpose** to keep those numbers exactly correct — Firestore's native counting can't dedupe by loan, and would have quietly inflated the summary numbers given how common duplicate records are in this exact dataset. What changed instead is how much gets *rendered into the browser* — only the most recent 100 rows draw into the table by default, with "Load more" revealing the rest, and Loan ID search always checks the complete already-loaded dataset regardless of pagination. This solves the part of the problem that was actually getting worse (a browser choking on thousands of rendered rows) while keeping the numbers at the top permanently accurate.
+
+**If a future maintainer wants to revert the All Audits pagination** back to rendering everything at once: flip `ALL_AUDITS_PAGINATION_ENABLED` to `false` near the top of `app.js` — this was built as a single, deliberate switch specifically so reverting doesn't require re-writing anything.
+
+### One-time data fixes
+
+Several historical data-quality issues (a handful of malformed dates, an import script's naming inconsistencies, ambiguous ornament matches) were fixed via **temporary, secret-gated API scripts** — never by editing Firestore data by hand. The pattern used every time:
+
+1. Build a script under `api/` requiring `?secret=<BACKFILL_SECRET>` in the URL
+2. Run it with `?mode=preview` first — reports exactly what *would* change, writes nothing
+3. Only after manually checking the preview output looks right, re-run with `?mode=commit`
+4. **Delete the script from the repo once confirmed successful** — these are not meant to be permanent, and forgetting this step is exactly what's hit Vercel's 12-function limit twice already
+
+If a similar one-time fix is ever needed again, copy this pattern rather than writing directly against Firestore from the browser console — the preview step has caught real mistakes before they became permanent.
+
+### `twUpdatedAt` and the daily reset — timezone caveat
+
+The Tare Weight sort (completed loans sink to the bottom) and the "remaining today / completed today" counter both work by checking whether a timestamp starts with today's date. **This is calculated using the browser's UTC time, not IST.** Since UTC's calendar flips over at 5:30 AM India time (not midnight), there's a real ~5.5 hour window — roughly 12:00 AM to 5:30 AM IST — where a recheck saved during that window could later appear to "un-complete" itself once UTC catches up. This has never actually been observed, since the team's real working hours are mid-morning through evening — but it's a genuine, understood latent bug, not a hypothetical one. If it's ever worth fixing: compute "today" explicitly in IST rather than relying on the browser's raw UTC conversion.
+
+### No protection against two people saving the same loan at once
+
+Saving a Tare Weight recheck is an unconditional overwrite — if two auditors happened to save the same not-yet-done loan within moments of each other, the second write silently erases the first, with no warning to either person. Low probability given the sort logic already pushes completed loans out of the way, but not zero, especially with multiple auditors working the same list simultaneously. Not yet fixed; the standard fix would be a "has this changed since I loaded it?" check before writing.
+
+## Known maintenance risks, ranked
+
+1. **`METABASE_SESSION_TOKEN` expires periodically** and requires manually copying a fresh value out of a browser cookie. When it does, the New Audit loan list, loan lookups, and the daily sync will all start failing with a clear "Metabase session expired" message (not a silent failure — this was fixed). **The permanent fix has been scoped but not built:** switch to a dedicated Metabase *service account* (email + password, not a session cookie) and have every endpoint log in fresh before each request, the same pattern already used for Firebase throughout this codebase. Ask Oro's Metabase admin for a dedicated login (e.g. `audit-app-service@orocorp.in`) — not a real employee's personal account, for reasons covered in project notes.
+2. **The IST/UTC timezone gap** described above — low likelihood, real if it ever hits.
+3. **No concurrency protection on Tare Weight saves** — also described above.
+4. **The `api/` folder creeping toward Vercel's 12-function limit** — a discipline issue, not a code issue. Delete one-time scripts promptly (see "One-time data fixes" above).
+
+## Deployment
+
+Deploy via **drag-and-drop upload to the GitHub repo**, not the GitHub web editor's paste function (Vercel's build cache has previously served stale files when edited in-browser). After deploying, hard-refresh (Ctrl+Shift+R) to bypass browser/CDN caching before verifying changes.

@@ -11,16 +11,22 @@
 // add-city-error, add-city-success, toggle-cities-btn, city-list-display.
 
 import { db, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "./firebase-config.js";
+import { FALLBACK_CITIES } from "./cities.js";
 
-/** @returns {Promise<string[]>} the filtered config/cities list. Exported so other AP Interview-only features (e.g. Local Languages in settings-interview.js) can read the same shared city list without a second copy of this fetch+filter logic. */
+/** @returns {Promise<string[]>} the filtered config/cities list — falls back to the same FALLBACK_CITIES list as getCities() (cities.js) on any read failure or empty/missing doc, so both places behave identically rather than one returning a safe fallback and the other returning nothing. Exported so other AP Interview-only features (e.g. Local Languages in settings-interview.js) can read the same shared city list without a second copy of this fetch+filter logic. */
 export async function loadCityList(db) {
-  const snap = await getDoc(doc(db, "config", "cities"));
-  const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
-  const list = rawList.filter((c) => typeof c === "string" && c.trim().length > 0);
-  if (list.length !== rawList.length) {
-    console.warn(`config/cities contains ${rawList.length - list.length} malformed entr(y/ies) — ignored. Check Firestore Console.`);
+  try {
+    const snap = await getDoc(doc(db, "config", "cities"));
+    const rawList = snap.exists() && Array.isArray(snap.data().list) ? snap.data().list : [];
+    const list = rawList.filter((c) => typeof c === "string" && c.trim().length > 0);
+    if (list.length !== rawList.length) {
+      console.warn(`config/cities contains ${rawList.length - list.length} malformed entr(y/ies) — ignored. Check Firestore Console.`);
+    }
+    return list.length > 0 ? list : FALLBACK_CITIES;
+  } catch (err) {
+    console.error("Couldn't load city list from Firestore, using fallback.", err);
+    return FALLBACK_CITIES;
   }
-  return list;
 }
 
 function toTitleCase(str) {

@@ -9,7 +9,7 @@
 
 import { db, doc, getDoc } from "./firebase-config.js";
 
-const FALLBACK_CITIES = [
+export const FALLBACK_CITIES = [
   "Chennai", "Bengaluru", "Hyderabad", "Pune",
   "Vijayawada", "Guntur", "Warangal", "Karimnagar",
 ];

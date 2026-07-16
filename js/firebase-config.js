@@ -16,7 +16,6 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
-  Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getAuth,
@@ -34,7 +33,6 @@ const firebaseConfig = {
   storageBucket: "oro-appraisalcalib.firebasestorage.app",
   messagingSenderId: "434366900777",
   appId: "1:434366900777:web:2783ac531fadcb8ed0ca38",
-  measurementId: "G-RS0QGN3P7K",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -55,6 +53,6 @@ const auth = getAuth(app);
 await setPersistence(auth, browserSessionPersistence);
 
 export {
-  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, Timestamp,
+  db, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove,
   auth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
 };

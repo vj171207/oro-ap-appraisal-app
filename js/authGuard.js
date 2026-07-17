@@ -66,8 +66,8 @@ export function requireAuth() {
 
 // Bare names, without ".html" — vercel.json has "cleanUrls": true, which
 // strips the extension from the actual browser address bar (so
-// window.location.pathname for city.html is really "/city", not
-// "/city.html"). Comparing against the bare name handles that; it also
+// window.location.pathname for calibration-city.html is really
+// "/calibration-city", not "/calibration-city.html"). Comparing against the bare name handles that; it also
 // still works correctly if cleanUrls is ever turned off, since the ".html"
 // suffix gets stripped from the pathname below either way.
 //
@@ -75,7 +75,7 @@ export function requireAuth() {
 // intentionally NOT listed in either array below — the chooser itself
 // isn't part of either app, so it correctly falls through to the `return
 // null` case, same as before this file was renamed from home.html).
-const CALIBRATION_PAGES = ["calibration-home", "city", "calibration", "reports", "settings-calibration"];
+const CALIBRATION_PAGES = ["calibration-home", "calibration-city", "calibration", "calibration-reports", "settings-calibration"];
 const INTERVIEW_PAGES = ["interview", "interview-city", "interview-entry", "interview-reports", "settings-interview"];
 
 function currentSettingsPage() {

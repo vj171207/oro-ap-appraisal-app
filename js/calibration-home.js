@@ -1,7 +1,7 @@
 import { requireAuth } from "./authGuard.js";
 import { getCities } from "./cities.js";
 import { db, collection, query, where, getCountFromServer } from "./firebase-config.js";
-import { QUICK_RANGE_OPTIONS, getQuickRangeDates } from "./exportExcel.js";
+import { QUICK_RANGE_OPTIONS, getQuickRangeDates } from "./calibration-exportExcel.js";
 
 async function main() {
   await requireAuth();
@@ -17,7 +17,7 @@ async function main() {
 
   cities.forEach((city) => {
     const row = document.createElement("a");
-    row.href = `city.html?city=${encodeURIComponent(city)}`;
+    row.href = `calibration-city.html?city=${encodeURIComponent(city)}`;
     row.className = "city-row";
     row.innerHTML = `
       <span class="name">${escapeHtml(city)}</span>
